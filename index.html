@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ecos de la Mazmorra - Motor de Novela Gráfica</title>
+    <title>Ecos de la Mazmorra - Edición Completa</title>
     <!-- Tipografía temática -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -100,6 +100,13 @@
         .narrative-box p {
             margin-bottom: 1rem;
             animation: fadeIn 0.8s ease-out;
+        }
+        
+        .narrative-box h2 {
+            font-family: var(--font-display);
+            color: var(--accent-gold);
+            text-align: center;
+            margin-top: 2rem;
         }
 
         /* Zona de Opciones */
@@ -259,10 +266,10 @@
             { id: 10, text: "<p>Sigues el rastro seguro, evitando todas las emboscadas y trampas como un fantasma.</p>", imageGenerationPrompt: "Dusty floor with footprints illuminated by a lantern.", imageUrl: "https://placehold.co/900x500/556B2F/FFF?text=Rastro+Seguro", options: [{ text: "Avanzar.", nextNode: 8 }] },
             { id: 11, text: "<p>El esqueleto se convierte en polvo ante tu fe.</p>", imageGenerationPrompt: "Skeleton disintegrating in holy light.", imageUrl: "https://placehold.co/900x500/FFF/000?text=Expulsion", options: [{ text: "Avanzar.", nextNode: 8 }] },
 
-            // --- FASE 1: LAS PROFUNDIDADES (Plantas 1-3) - FÍSICO ---
+            // --- FASE 1: LAS PROFUNDIDADES (Físico) ---
             {
                 id: 8,
-                text: "<p>Abres las grandes puertas de hierro. El olor a ozono y sangre es más fuerte aquí. Has entrado en los Barracones de la Legión Oscura.</p><p>Un puente de piedra inestable cruza un abismo. Al otro lado, un grupo de Orcos bloquea el paso.</p>",
+                text: "<p>Abres las grandes puertas de hierro. El olor a ozono y sangre inunda tus pulmones. Has entrado en los Barracones de la Legión Oscura.</p><p>Un puente de piedra inestable cruza un abismo insondable. Al otro lado, un grupo de Orcos de Élite bloquea el paso hacia el ascensor.</p>",
                 imageGenerationPrompt: "Underground chasm. A crumbling stone bridge spanning a dark void. On the other side, a group of armored orcs with red glowing eyes waiting. Torchlight reflecting on metal armor.",
                 imageUrl: "https://placehold.co/900x500/220000/red?text=Puente+de+los+Orcos",
                 options: [
@@ -272,63 +279,73 @@
                         requiredClass: CLASS_TYPES.WARRIOR 
                     },
                     { 
-                        text: "Disparar al líder Orco desde lejos (Solo Explorador).", 
+                        text: "Disparar al líder Orco desde las sombras (Solo Explorador).", 
                         nextNode: 12, 
                         requiredClass: CLASS_TYPES.RANGER 
                     },
                     { 
-                        text: "Intentar cruzar corriendo mientras te ven.", 
-                        nextNode: 21 // Nodo de daño/fracaso parcial
+                        text: "Intentar cruzar corriendo bajo la lluvia de flechas.", 
+                        nextNode: 21 // Nodo específico de Herida en Fase 1
                     }
                 ]
             },
             {
                 id: 12,
-                text: "<p>Tu habilidad marcial despeja el camino. Los orcos caen al vacío o mueren bajo tu acero/flechas. El puente resiste lo justo para que cruces.</p><p>Llegas al ascensor de carga que baja a las profundidades.</p>",
+                text: "<p>Tu habilidad marcial despeja el camino. Los orcos caen al vacío, sus gritos desvaneciéndose en la oscuridad. El puente resiste lo justo para que cruces.</p><p>Llegas al ascensor de carga y tiras de la palanca. Las cadenas gimen mientras desciendes a las profundidades.</p>",
                 imageGenerationPrompt: "Victory on a bridge. Dead orcs lying on the stone. The hero standing looking at a large wooden elevator mechanism descending into darkness.",
-                imageUrl: "https://placehold.co/900x500/444/000?text=Puente+Despejado",
+                imageUrl: "https://placehold.co/900x500/444/000?text=Descenso+Seguro",
                 options: [
                     { text: "Bajar al siguiente nivel.", nextNode: 13 }
                 ]
             },
+            // Nodo de Herida Específico para Fase 1
+            {
+                id: 21,
+                text: "<p>Corres por tu vida. Una flecha se clava en tu hombro y otra roza tu pierna. Tropiezas al llegar al otro lado, sangrando profusamente.</p><p>Logras activar el ascensor justo antes de que los orcos te alcancen. Sobrevives, pero estás débil.</p>",
+                imageGenerationPrompt: "Hero badly wounded inside a cage elevator. An arrow sticking out of the shoulder armor. Looking up at angry orcs as the elevator descends.",
+                imageUrl: "https://placehold.co/900x500/400/000?text=Huida+Sangrienta",
+                options: [
+                    { text: "Vendarse y continuar.", nextNode: 13 } // Conecta correctamente con el Nivel 2
+                ]
+            },
 
-            // --- FASE 2: EL SANTUARIO OLVIDADO (Plantas 4-6) - MÁGICO ---
+            // --- FASE 2: EL SANTUARIO OLVIDADO (Mágico) ---
             {
                 id: 13,
-                text: "<p>El ascensor se detiene con un chirrido metálico. El aire aquí es gélido. Estás en el Osario Real.</p><p>Una niebla verde cubre el suelo. Frente a ti, un Lich menor conjura un hechizo de muerte que bloqueará la salida para siempre si no actúas YA.</p>",
+                text: "<p>El ascensor se detiene con un golpe seco. El aire aquí es gélido, casi sólido. Estás en el Osario Real, el dominio de los muertos.</p><p>Una niebla verde cubre el suelo. Frente a la puerta de salida, un Lich menor flota en el aire, conjurando un muro de hueso que bloqueará tu avance.</p>",
                 imageGenerationPrompt: "Crypt interior. Green ominous fog covering the floor. A floating Lich (undead wizard) in tattered robes casting a purple spell. Glowing runes in the air.",
                 imageUrl: "https://placehold.co/900x500/003300/00ff00?text=El+Lich+Menor",
                 options: [
                     { 
-                        text: "Contrahechizo: Disipar Magia (Solo Mago).", 
+                        text: "Lanzar 'Disipar Magia' (Solo Mago).", 
                         nextNode: 14, 
                         requiredClass: CLASS_TYPES.MAGE 
                     },
                     { 
-                        text: "Invocar Fuego Sagrado (Solo Clérigo).", 
+                        text: "Invocar 'Fuego Sagrado' (Solo Clérigo).", 
                         nextNode: 14, 
                         requiredClass: CLASS_TYPES.CLERIC 
                     },
                     { 
-                        text: "Cargar contra el Lich antes de que termine el hechizo.", 
-                        nextNode: 22 // Muerte probable o mucho daño
+                        text: "Cargar contra el Lich con tu arma.", 
+                        nextNode: 22 // Castigo por usar fuerza bruta contra magia
                     }
                 ]
             },
             {
                 id: 14,
-                text: "<p>La magia del Lich se rompe en mil pedazos. El no-muerto chilla mientras su forma física se desintegra. La barrera cae.</p><p>Entre sus restos encuentras la Llave de las Sombras, necesaria para descender más.</p>",
+                text: "<p>Tu magia choca contra la del Lich, destrozando sus defensas. El no-muerto aúlla mientras se desintegra en polvo espectral.</p><p>Entre sus restos encuentras la <strong>Llave de las Sombras</strong>. El camino hacia el final está abierto.</p>",
                 imageGenerationPrompt: "Magical explosion. The Lich disintegrating into dust. A glowing key hovering in the air where the enemy was. Blue magical residue.",
                 imageUrl: "https://placehold.co/900x500/000044/cyan?text=Lich+Derrotado",
                 options: [
-                    { text: "Usar la llave y descender.", nextNode: 15 }
+                    { text: "Usar la llave y entrar al laberinto.", nextNode: 15 }
                 ]
             },
 
-            // --- FASE 3: EL LABERINTO DE SOMBRAS (Plantas 7-9) - SIGILO ---
+            // --- FASE 3: EL LABERINTO DE SOMBRAS (Sigilo) ---
             {
                 id: 15,
-                text: "<p>La llave abre una puerta de obsidiana. Entras en el Laberinto de los Susurros. No hay luz aquí, y el suelo está lleno de cables trampa invisibles y placas de presión.</p><p>Escuchas la respiración de asesinos invisibles acechando en el techo.</p>",
+                text: "<p>La llave abre una puerta de obsidiana. Entras en el <strong>Laberinto de los Susurros</strong>. No hay luz, y el silencio es absoluto.</p><p>Apenas distingues el brillo de cables trampa invisibles. Arriba, en las sombras del techo, escuchas el leve roce de hojas afiladas. Asesinos de la Oscuridad te acechan.</p>",
                 imageGenerationPrompt: "Pitch black corridor with faint moonlight streaks. Reflections of tripwires. Subtle silhouettes of assassins on the ceiling. Tense atmosphere.",
                 imageUrl: "https://placehold.co/900x500/111/333?text=Laberinto+Mortal",
                 options: [
@@ -338,64 +355,76 @@
                         requiredClass: CLASS_TYPES.ROGUE 
                     },
                     { 
-                        text: "Detectar a los asesinos por el sonido de su respiración (Solo Explorador).", 
+                        text: "Rastrear la ruta segura escuchando a los asesinos (Solo Explorador).", 
                         nextNode: 16, 
                         requiredClass: CLASS_TYPES.RANGER 
                     },
                     { 
-                        text: "Iluminar la sala con magia (Atraerá a todos).", 
-                        nextNode: 21 
+                        text: "Encender una antorcha mágica para ver mejor.", 
+                        nextNode: 24 // Falla y avanza herido
                     },
                     { 
-                        text: "Correr con el escudo en alto.", 
-                        nextNode: 21 
+                        text: "Correr protegiéndose con el escudo.", 
+                        nextNode: 24 // Falla y avanza herido
                     }
                 ]
             },
+            
+            // --- NUEVO NODO 24: HERIDO EN LA OSCURIDAD (Conecta Fase 3 con Final) ---
             {
-                id: 16,
-                text: "<p>Te mueves como un fantasma. Los asesinos no te detectan hasta que es demasiado tarde, o simplemente los evitas. Llegas a la gran puerta final.</p><p>Detrás de ella sientes una presencia abrumadora. El Señor Oscuro te espera.</p>",
-                imageGenerationPrompt: "Huge demonic door. Red light pulsing from the cracks. The hero standing small in front of it. Final boss preparation.",
-                imageUrl: "https://placehold.co/900x500/220000/FF4500?text=La+Puerta+Final",
+                id: 24, 
+                text: "<p>¡Grave error! Al revelarte, los asesinos lanzan una lluvia de dardos envenenados. Activas dos trampas al intentar esquivar en pánico.</p><p>Llegas a la salida con la visión borrosa, el veneno ardiendo en tus venas y varias flechas clavadas en tu equipo. Estás vivo, pero en pésimas condiciones para lo que viene.</p>",
+                imageGenerationPrompt: "First person view. Vision blurry and vignetted green (poison). Several darts stuck in a wooden shield or armor. Stumbling towards a large red door.",
+                imageUrl: "https://placehold.co/900x500/002200/00ff00?text=Envenenado+y+Herido",
                 options: [
-                    { text: "Entrar y enfrentar el destino.", nextNode: 18 }
+                    { text: "Beber el último antídoto y avanzar.", nextNode: 16 }
                 ]
             },
 
-            // --- FASE 4: EL TRONO DEL SEÑOR OSCURO (Planta 10) - CLÍMAX ---
+            {
+                id: 16,
+                text: "<p>Superas el laberinto. Ante ti se alza la <strong>Puerta del Trono</strong>, forjada con huesos de dragón y acero negro. Una energía opresiva emana del interior, haciendo vibrar tus propios huesos.</p><p>Sabes que <strong>Malakar</strong> te espera al otro lado. No hay vuelta atrás.</p>",
+                imageGenerationPrompt: "Huge demonic door. Red light pulsing from the cracks. The hero standing small in front of it. Final boss preparation. Smoke rising from the floor.",
+                imageUrl: "https://placehold.co/900x500/220000/FF4500?text=La+Puerta+Final",
+                options: [
+                    { text: "Entrar y enfrentar tu destino.", nextNode: 18 }
+                ]
+            },
+
+            // --- FASE 4: EL TRONO DEL SEÑOR OSCURO (Clímax) ---
             {
                 id: 18,
-                text: "<p><strong>MALAKAR, EL SEÑOR DEL VACÍO</strong> se alza ante ti en su trono de huesos negros. Mide tres metros y su armadura supura oscuridad pura.</p><p><em>'¿Un simple mortal osa desafiarme?'</em> —su voz retumba en tu mente—.</p><p>Malakar carga energía para un ataque final que destruirá tu alma. Solo tienes UNA oportunidad.</p>",
+                text: "<p><strong>MALAKAR, EL SEÑOR DEL VACÍO</strong> se alza ante ti en su trono de huesos. Mide tres metros y su armadura supura oscuridad pura.</p><p><em>'¿Un simple mortal osa desafiarme?'</em> —su voz retumba en tu mente como un trueno—.</p><p>Malakar alza su mano y el aire se desgarra. Una esfera de aniquilación total comienza a formarse. Solo tienes <strong>UNA oportunidad</strong> para interrumpirlo con tu habilidad definitiva antes de que borre tu existencia.</p>",
                 imageGenerationPrompt: "Final Boss. Malakar, a giant void lord in spiked black armor. His face is a swirling vortex of purple energy. Sitting on a throne of bones. Raising a hand charging a massive dark energy ball. Epic scale.",
                 imageUrl: "https://placehold.co/900x500/000/800080?text=MALAKAR+BOSS+FINAL",
                 options: [
                     { 
-                        text: "Ejecutar el 'Golpe del Rompe-Cielos' (GUERRERO).", 
+                        text: "¡GOLPE DEL ROMPE-CIELOS! (GUERRERO)", 
                         nextNode: 20, 
                         requiredClass: CLASS_TYPES.WARRIOR 
                     },
                     { 
-                        text: "Invocar 'Ira de los Cielos' (CLÉRIGO).", 
+                        text: "¡IRA DE LOS CIELOS! (CLÉRIGO)", 
                         nextNode: 20, 
                         requiredClass: CLASS_TYPES.CLERIC 
                     },
                     { 
-                        text: "Lanzar 'Desintegración Arcana' (MAGO).", 
+                        text: "¡DESINTEGRACIÓN ARCANA! (MAGO)", 
                         nextNode: 20, 
                         requiredClass: CLASS_TYPES.MAGE 
                     },
                     { 
-                        text: "Usar 'Daga Fantasma' en el punto débil (PÍCARO).", 
+                        text: "¡DAGA FANTASMA AL CORAZÓN! (PÍCARO)", 
                         nextNode: 20, 
                         requiredClass: CLASS_TYPES.ROGUE 
                     },
                     { 
-                        text: "Disparo 'Perforador de Corazones' (EXPLORADOR).", 
+                        text: "¡FLECHA PERFORADORA DE ALMAS! (EXPLORADOR)", 
                         nextNode: 20, 
                         requiredClass: CLASS_TYPES.RANGER 
                     },
                     { 
-                        text: "Intentar dialogar...", 
+                        text: "Intentar dialogar o suplicar piedad.", 
                         nextNode: 23 // Muerte instantánea
                     }
                 ]
@@ -404,7 +433,7 @@
             // --- FINALES Y MUERTES ---
             {
                 id: 20,
-                text: "<p>¡IMPACTO CRÍTICO!</p><p>Tu ataque conecta perfectamente antes de que Malakar pueda lanzar su hechizo. La energía del vacío implosiona. Con un grito que desgarra la realidad, el Señor Oscuro se disuelve en la nada.</p><p>La mazmorra comienza a temblar. El mal ha sido purgado. Eres una leyenda.</p><h2>¡VICTORIA!</h2>",
+                text: "<p>¡IMPACTO CRÍTICO!</p><p>Tu ataque conecta perfectamente en el núcleo de Malakar antes de que pueda lanzar su hechizo. La energía del vacío implosiona sobre él.</p><p>Con un grito que desgarra la realidad, el Señor Oscuro se disuelve en la nada. La mazmorra comienza a temblar y colapsar. El mal ha sido purgado. Hoy, nace una leyenda.</p><h2>¡VICTORIA!</h2>",
                 imageGenerationPrompt: "Ending scene. The boss exploding in a flash of white light. The hero standing victorious in silhouette. Treasure falling from the ceiling. Credits style.",
                 imageUrl: "https://placehold.co/900x500/FFD700/FFF?text=LEYENDA+VIVA",
                 options: [
@@ -412,17 +441,8 @@
                 ]
             },
             {
-                id: 21,
-                text: "<p>Sobrevives, pero a un coste terrible. Estás gravemente herido, tu armadura rota y tu espíritu quebrantado. Te arrastras hacia la siguiente sala, sabiendo que el próximo error será el último.</p>",
-                imageGenerationPrompt: "Hero badly wounded leaning against a wall. Bandages, broken sword hilt. Dark gloomy atmosphere.",
-                imageUrl: "https://placehold.co/900x500/400/000?text=Herido+de+Gravedad",
-                options: [
-                    { text: "Continuar cojeando...", nextNode: 13 } // Loop de vuelta a la trama principal pero "herido" (simulado)
-                ]
-            },
-            {
-                id: 22,
-                text: "<p>El hechizo del Lich te golpea de lleno. Sientes como tu fuerza vital es drenada en segundos. Te conviertes en una estatua más de su colección.</p>",
+                id: 22, // Muerte Fase 2 (Lich)
+                text: "<p>El hechizo del Lich te golpea de lleno. Sientes como tu fuerza vital es drenada en segundos. Te conviertes en una estatua más de su colección para toda la eternidad.</p><h2>GAME OVER</h2>",
                 imageGenerationPrompt: "Game Over screen. A stone statue looking like the hero with a terrified expression. Green fog around.",
                 imageUrl: "https://placehold.co/900x500/000/00FF00?text=GAME+OVER",
                 options: [
@@ -430,8 +450,8 @@
                 ]
             },
             {
-                id: 23,
-                text: "<p>Malakar ríe. <em>'Patético'</em>. Con un chasquido de dedos, tu existencia es borrada de la historia. Nadie recordará tu nombre.</p>",
+                id: 23, // Muerte Fase 4 (Boss)
+                text: "<p>Malakar ríe ante tu vacilación. <em>'Patético'</em>. Con un chasquido de dedos, tu existencia es borrada de la historia. Ni siquiera quedará polvo de tus huesos.</p><h2>ANIQUILADO</h2>",
                 imageGenerationPrompt: "Void. Total blackness with two purple eyes looking down. Text implies total annihilation.",
                 imageUrl: "https://placehold.co/900x500/000/FFF?text=ANIQUILADO",
                 options: [
@@ -471,7 +491,7 @@
             ui.img.classList.add('loading');
             setTimeout(() => {
                 ui.img.src = node.imageUrl;
-                ui.prompt.textContent = `PROMPT: ${node.imageGenerationPrompt}`; // Para tu uso como diseñador
+                ui.prompt.textContent = `PROMPT: ${node.imageGenerationPrompt}`;
                 ui.img.onload = () => ui.img.classList.remove('loading');
             }, 300);
 
@@ -482,15 +502,14 @@
             ui.options.innerHTML = '';
             
             node.options.forEach(option => {
-                // FILTRADO ESTRICTO: Si la opción requiere una clase específica y no la tenemos, la saltamos por completo.
+                // FILTRADO ESTRICTO: Si la opción requiere una clase y no la tenemos, NO SE MUESTRA.
                 if (option.requiredClass && option.requiredClass !== STATE.playerClass) {
-                    return; // No renderizar nada
+                    return; 
                 }
                 
                 const btn = document.createElement('div');
                 btn.className = 'btn-choice';
                 
-                // Como ya filtramos antes, aquí siempre añadimos el evento click
                 btn.onclick = () => selectOption(option);
 
                 if (option.setClass) {
@@ -535,10 +554,6 @@
                 case CLASS_TYPES.RANGER: return '#65a30d'; // Verde Bosque/Oliva
                 default: return '#b45309';
             }
-        }
-        
-        function capitalizeFirstLetter(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
         }
 
         // Arrancar

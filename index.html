@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
+    <!-- Iconos para UI -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
         /* --- ESTILOS TEMÁTICOS (DARK FANTASY) --- */
@@ -18,6 +20,7 @@
             --text-highlight: #f3f4f6;
             --accent-red: #7f1d1d;
             --accent-gold: #b45309;
+            --accent-gray: #4b5563;
             --border-color: #444;
             --font-display: 'Cinzel', serif;
             --font-body: 'Merriweather', serif;
@@ -68,7 +71,7 @@
             opacity: 0;
         }
 
-        /* Overlay de Debug (Para ver tus Prompts) */
+        /* Overlay de Debug */
         .debug-prompt {
             position: absolute;
             bottom: 0;
@@ -84,9 +87,34 @@
             pointer-events: none;
             border-top: 1px solid #00ff9d;
         }
-        
-        .viewport:hover .debug-prompt {
-            opacity: 1;
+        .viewport:hover .debug-prompt { opacity: 1; }
+
+        /* --- NUEVA BARRA SUPERIOR (Top Bar) --- */
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem;
+            z-index: 20;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            pointer-events: none;
+        }
+
+        .status-badge {
+            background: rgba(18, 18, 18, 0.9);
+            border: 1px solid var(--accent-gold);
+            padding: 0.5rem 1rem;
+            font-family: var(--font-display);
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         /* Zona Narrativa */
@@ -107,6 +135,8 @@
             color: var(--accent-gold);
             text-align: center;
             margin-top: 2rem;
+            font-size: 2rem;
+            text-shadow: 0 0 10px rgba(180, 83, 9, 0.5);
         }
 
         /* Zona de Opciones */
@@ -117,6 +147,8 @@
             flex-direction: column;
             gap: 0.8rem;
             border-top: 1px solid var(--border-color);
+            max-height: 40vh;
+            overflow-y: auto;
         }
 
         .btn-choice {
@@ -131,38 +163,34 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .btn-choice:hover {
+        .btn-choice:hover:not(.locked) {
             border-color: var(--accent-gold);
             transform: translateX(5px);
             background: linear-gradient(90deg, #2a2a2a, #3a3a3a);
         }
 
-        /* Estilos condicionales para clases */
+        /* Estilos condicionales */
         .btn-choice.class-option {
             border-left: 3px solid var(--accent-gold);
+            background: linear-gradient(90deg, #2a1a0a, #2a2a2a);
         }
 
         .btn-choice.locked {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
-            filter: grayscale(1);
+            border-color: var(--accent-gray);
+            background: #111;
+            color: var(--accent-gray);
         }
-
-        /* UI de Estado */
-        .status-bar {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            background: rgba(0,0,0,0.8);
-            border: 1px solid var(--accent-gold);
-            padding: 0.5rem 1rem;
-            font-family: var(--font-display);
-            color: var(--accent-gold);
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            z-index: 10;
+        
+        .icon-lock {
+            font-size: 0.9rem;
+            margin-left: 10px;
         }
 
         @keyframes fadeIn {
@@ -173,6 +201,7 @@
         @media (max-width: 768px) {
             #game-engine { height: 100vh; grid-template-rows: 35% 1fr auto; }
             .narrative-box { padding: 1.2rem; font-size: 1rem; }
+            .status-badge { font-size: 0.7rem; padding: 0.3rem 0.6rem; }
         }
     </style>
 </head>
@@ -180,17 +209,22 @@
 
     <div id="game-engine">
         <div class="viewport">
-            <div id="ui-class" class="status-bar">Clase: Ninguna</div>
+            <!-- Nueva Barra Superior -->
+            <div class="top-bar">
+                <div id="ui-class" class="status-badge"><i class="fas fa-user-shield"></i> Clase: ???</div>
+                <div id="ui-floor" class="status-badge"><i class="fas fa-dungeon"></i> Planta: 1 / 10</div>
+            </div>
+
             <img id="scene-image" src="" alt="Scene">
             <div id="prompt-display" class="debug-prompt">Prompt: ...</div>
         </div>
 
         <div id="narrative" class="narrative-box">
-            <!-- El texto se inyecta aquí -->
+            <!-- Texto dinámico -->
         </div>
 
         <div id="options" class="options-box">
-            <!-- Los botones se inyectan aquí -->
+            <!-- Botones dinámicos -->
         </div>
     </div>
 
@@ -202,7 +236,7 @@
          */
         const STATE = {
             playerClass: null,
-            currentNodeId: 1 // Empezamos en el ID 1
+            currentNodeId: 1
         };
 
         const CLASS_TYPES = {
@@ -217,245 +251,206 @@
          * ------------------------------------------------------------------
          * BASE DE DATOS DE HISTORIA (Story Nodes)
          * ------------------------------------------------------------------
+         * Nueva Propiedad: "floor" (1-10)
+         * Filosofía de Diseño: Opción Épica, Opción Estándar (Coste), Opción Trampa (Muerte)
          */
         const storyNodes = [
-            // --- FASE 0: CREACIÓN Y TUTORIAL ---
+            // --- PLANTA 1: LA ENTRADA ---
             {
                 id: 1,
-                text: "<p>El viento aúlla a través de las grietas de la montaña. Ante ti se alza la entrada prohibida a las Catacumbas de Aethelgard. Nadie ha regresado en siglos.</p><p>Antes de cruzar el umbral, reflexionas sobre el entrenamiento que te ha traído hasta aquí...</p>",
-                imageGenerationPrompt: "Dark fantasy landscape. A massive, ancient stone doorway carved into a jagged mountain cliff. Stormy grey sky, fog swirling around the entrance. Runes glowing faintly in blue. Cinematic, detailed matte painting.",
-                imageUrl: "https://placehold.co/900x500/111/444?text=Entrada+a+la+Mazmorra",
+                floor: 1,
+                text: "<p>Las leyendas hablan de la Torre Invertida de Malakar, una mazmorra que se hunde diez pisos en la tierra. Estás en la entrada, azotada por el viento.</p><p>Elige tu destino y tu entrenamiento.</p>",
+                imageGenerationPrompt: "Dark fantasy, cinematic shot. A massive hole in the ground with ancient stone stairs spiraling down into darkness. Stormy sky. Rune stones marking the entrance.",
+                imageUrl: "https://placehold.co/900x500/111/444?text=Planta+1:+La+Entrada",
                 options: [
-                    { text: "Soy un GUERRERO, mi espada es mi ley.", nextNode: 2, setClass: CLASS_TYPES.WARRIOR },
-                    { text: "Soy un PÍCARO, las sombras son mi hogar.", nextNode: 2, setClass: CLASS_TYPES.ROGUE },
-                    { text: "Soy un MAGO, el conocimiento es poder.", nextNode: 2, setClass: CLASS_TYPES.MAGE },
-                    { text: "Soy un CLÉRIGO, la luz divina es mi guía.", nextNode: 2, setClass: CLASS_TYPES.CLERIC },
-                    { text: "Soy un EXPLORADOR, conozco cada rastro y sendero.", nextNode: 2, setClass: CLASS_TYPES.RANGER }
+                    { text: "Soy un GUERRERO, fuerza bruta.", nextNode: 2, setClass: CLASS_TYPES.WARRIOR },
+                    { text: "Soy un PÍCARO, sigilo y astucia.", nextNode: 2, setClass: CLASS_TYPES.ROGUE },
+                    { text: "Soy un MAGO, poder arcano.", nextNode: 2, setClass: CLASS_TYPES.MAGE },
+                    { text: "Soy un CLÉRIGO, fe inquebrantable.", nextNode: 2, setClass: CLASS_TYPES.CLERIC },
+                    { text: "Soy un EXPLORADOR, rastreo y arco.", nextNode: 2, setClass: CLASS_TYPES.RANGER }
                 ]
             },
+
+            // --- PLANTA 2: EL PUENTE DE LOS CONDENADOS (Físico) ---
             {
                 id: 2,
-                text: "<p>Desciendes por la escalera de caracol. La oscuridad es absoluta hasta que enciendes una antorcha. Llegas a una sala circular con tres caminos.</p><p>En el centro, un altar antiguo parece requerir un sacrificio o una plegaria.</p>",
-                imageGenerationPrompt: "Dungeon interior. A circular stone chamber illuminated by torchlight. Three dark corridors branching off. In the center, a bloodstained stone altar with strange carvings. High contrast, ominous shadows.",
-                imageUrl: "https://placehold.co/900x500/221100/orange?text=Sala+del+Altar",
+                floor: 2,
+                text: "<p>Desciendes a la oscuridad. El primer obstáculo es un abismo de 10 metros. El puente de piedra ha colapsado parcialmente. Al otro lado, la puerta está cerrada.</p>",
+                imageGenerationPrompt: "Dungeon interior, torchlight. A broken stone bridge over a bottomless chasm. A heavy iron door on the other side.",
+                imageUrl: "https://placehold.co/900x500/221100/orange?text=Planta+2:+El+Abismo",
                 options: [
-                    { text: "Examinar el camino de la izquierda (Ruido metálico).", nextNode: 3 },
-                    { text: "Leer las runas del altar (Solo Mago).", nextNode: 4, requiredClass: CLASS_TYPES.MAGE },
-                    { text: "Purificar el altar corrupto (Solo Clérigo).", nextNode: 9, requiredClass: CLASS_TYPES.CLERIC },
-                    { text: "Buscar mecanismos ocultos en el suelo (Solo Pícaro).", nextNode: 5, requiredClass: CLASS_TYPES.ROGUE },
-                    { text: "Analizar huellas en el polvo (Solo Explorador).", nextNode: 10, requiredClass: CLASS_TYPES.RANGER },
-                    { text: "Ignorar todo y avanzar al frente.", nextNode: 6 }
+                    { 
+                        text: "Saltar con armadura pesada (GUERRERO).", 
+                        nextNode: 3, 
+                        requiredClass: CLASS_TYPES.WARRIOR 
+                    },
+                    { 
+                        text: "Disparar una flecha con cuerda (EXPLORADOR).", 
+                        nextNode: 3, 
+                        requiredClass: CLASS_TYPES.RANGER 
+                    },
+                    { 
+                        text: "Intentar escalar por la pared lateral (Estándar - Riesgo).", 
+                        nextNode: 30, // Nodo de éxito con herida
+                    },
+                    { 
+                        text: "Saltar sin impulso (TRAMPA).", 
+                        nextNode: 90 // Muerte por estupidez
+                    }
                 ]
             },
+
+            // --- PLANTA 3: LA GUARDIA ORCA (Combate Físico) ---
             {
                 id: 3,
-                text: "<p>¡Emboscada! Un esqueleto armado surge de las sombras con una espada oxidada. No hay tiempo para pensar.</p>",
-                imageGenerationPrompt: "Action shot. An animated skeleton warrior lunging forward with a rusty sword. Dynamic angle, motion blur. Background is a dark dungeon corridor. Blue eyes glowing in the skull.",
-                imageUrl: "https://placehold.co/900x500/300/red?text=Combate+Esqueleto",
+                floor: 3,
+                text: "<p>Cruzas el abismo. Al abrir la puerta, te encuentras en un barracón. Tres orcos juegan a los dados, pero sus armas están cerca. Te han visto.</p>",
+                imageGenerationPrompt: "Dungeon barracks. Three green-skinned orcs standing up in surprise, reaching for rusty axes. Gritty, low light.",
+                imageUrl: "https://placehold.co/900x500/220000/red?text=Planta+3:+Guardia+Orca",
                 options: [
-                    { text: "Golpear con fuerza bruta (Solo Guerrero).", nextNode: 7, requiredClass: CLASS_TYPES.WARRIOR },
-                    { text: "Expulsar no-muertos (Solo Clérigo).", nextNode: 11, requiredClass: CLASS_TYPES.CLERIC },
-                    { text: "Intentar esquivar y huir.", nextNode: 6 }
+                    { text: "¡Torbellino de acero! (GUERRERO)", nextNode: 4, requiredClass: CLASS_TYPES.WARRIOR },
+                    { text: "Bomba de humo y puñalada (PÍCARO)", nextNode: 4, requiredClass: CLASS_TYPES.ROGUE },
+                    { text: "Luchar contra los tres a la vez (Estándar - Muy Arriesgado).", nextNode: 31 }, // Herida grave
+                    { text: "Intentar dialogar amablemente (TRAMPA).", nextNode: 91 } // Muerte
                 ]
             },
-            { id: 4, text: "<p>Descifras la inscripción arcana. Un pasadizo secreto se abre iluminado por luz azul, permitiéndote evitar las trampas.</p>", imageGenerationPrompt: "Magical effect. A stone wall sliding open to reveal a secret passage glowing with ethereal blue light.", imageUrl: "https://placehold.co/900x500/000033/cyan?text=Pasadizo+Secreto", options: [{ text: "Entrar.", nextNode: 8 }] },
-            { id: 5, text: "<p>Desactivas una placa de presión y encuentras un cofre oculto con equipo mejorado. Te sientes preparado para lo que viene.</p>", imageGenerationPrompt: "Close up. Treasure chest revealing gold and potions.", imageUrl: "https://placehold.co/900x500/332200/gold?text=Tesoro+Encontrado", options: [{ text: "Continuar.", nextNode: 8 }] },
-            { id: 6, text: "<p>Huyes a través del pasillo lleno de trampas. Sufres cortes profundos y pierdes parte de tu equipo, pero sobrevives de milagro.</p>", imageGenerationPrompt: "First person view. Bleeding hands, dark corridor with spikes.", imageUrl: "https://placehold.co/900x500/330000/white?text=Herido+y+Cansado", options: [{ text: "Continuar a duras penas.", nextNode: 8 }] },
-            { id: 7, text: "<p>Destrozas al esqueleto de un solo golpe. Tu fuerza es inigualable.</p>", imageGenerationPrompt: "Victory. Broken bones scattered on the floor.", imageUrl: "https://placehold.co/900x500/555/fff?text=Victoria", options: [{ text: "Continuar.", nextNode: 8 }] },
-            { id: 9, text: "<p>Tu plegaria purifica el altar. Una luz cálida te otorga una bendición de protección para el viaje.</p>", imageGenerationPrompt: "Holy light shining from a stone altar.", imageUrl: "https://placehold.co/900x500/FFD700/000?text=Bendicion", options: [{ text: "Avanzar.", nextNode: 8 }] },
-            { id: 10, text: "<p>Sigues el rastro seguro, evitando todas las emboscadas y trampas como un fantasma.</p>", imageGenerationPrompt: "Dusty floor with footprints illuminated by a lantern.", imageUrl: "https://placehold.co/900x500/556B2F/FFF?text=Rastro+Seguro", options: [{ text: "Avanzar.", nextNode: 8 }] },
-            { id: 11, text: "<p>El esqueleto se convierte en polvo ante tu fe.</p>", imageGenerationPrompt: "Skeleton disintegrating in holy light.", imageUrl: "https://placehold.co/900x500/FFF/000?text=Expulsion", options: [{ text: "Avanzar.", nextNode: 8 }] },
 
-            // --- FASE 1: LAS PROFUNDIDADES (Físico) ---
+            // --- PLANTA 4: EL ENIGMA DE LAS RUNAS (Mágico) ---
+            {
+                id: 4,
+                floor: 4,
+                text: "<p>Dejas los cadáveres atrás y desciendes. El ambiente cambia. El aire huele a ozono. Una puerta mágica bloquea el paso, cubierta de runas brillantes que cambian de color.</p>",
+                imageGenerationPrompt: "Magical door. Glowing blue and purple runes floating in the air blocking a stone archway. Mystical atmosphere.",
+                imageUrl: "https://placehold.co/900x500/000033/cyan?text=Planta+4:+Puerta+Arcana",
+                options: [
+                    { text: "Disipar la barrera rúnica (MAGO).", nextNode: 5, requiredClass: CLASS_TYPES.MAGE },
+                    { text: "Buscar el mecanismo de anulación (PÍCARO).", nextNode: 5, requiredClass: CLASS_TYPES.ROGUE },
+                    { text: "Golpear las runas con el arma (TRAMPA).", nextNode: 92 }, // Explosión mágica letal
+                    { text: "Forzar la puerta soportando la descarga (Estándar - Doloroso).", nextNode: 32 }
+                ]
+            },
+
+            // --- PLANTA 5: EL SALÓN DE LOS ESPEJOS (Mental) ---
+            {
+                id: 5,
+                floor: 5,
+                text: "<p>Entras en una sala llena de espejos antiguos. Tu reflejo se mueve con retraso. De repente, una copia oscura de ti mismo sale del cristal con intenciones asesinas.</p>",
+                imageGenerationPrompt: "Hall of mirrors. The hero looking at a mirror, but the reflection is grinning evilly and holding a dagger. Surreal horror.",
+                imageUrl: "https://placehold.co/900x500/111/purple?text=Planta+5:+Tu+Reflejo",
+                options: [
+                    { text: "Rezar para expulsar la oscuridad (CLÉRIGO).", nextNode: 6, requiredClass: CLASS_TYPES.CLERIC },
+                    { text: "Romper todos los espejos rápidamente (GUERRERO).", nextNode: 6, requiredClass: CLASS_TYPES.WARRIOR },
+                    { text: "Pelear contra tu sombra (Estándar - Difícil).", nextNode: 33 },
+                    { text: "Mirar fijamente a los ojos del reflejo (TRAMPA).", nextNode: 93 } // Posesión
+                ]
+            },
+
+            // --- PLANTA 6: EL NIGROMANTE (No-Muertos) ---
+            {
+                id: 6,
+                floor: 6,
+                text: "<p>El suelo está cubierto de huesos. Un Nigromante alza su báculo y los esqueletos comienzan a ensamblarse a tu alrededor. Son docenas.</p>",
+                imageGenerationPrompt: "Crypt. A necromancer in black robes raising hands. Skeletons rising from the ground. Green fog.",
+                imageUrl: "https://placehold.co/900x500/002200/00ff00?text=Planta+6:+El+Nigromante",
+                options: [
+                    { text: "Canalizar Ira Divina (CLÉRIGO).", nextNode: 7, requiredClass: CLASS_TYPES.CLERIC },
+                    { text: "Bola de Fuego al centro de la sala (MAGO).", nextNode: 7, requiredClass: CLASS_TYPES.MAGE },
+                    { text: "Correr hacia la salida esquivando (Estándar - Riesgo).", nextNode: 34 },
+                    { text: "Hacerse el muerto (TRAMPA).", nextNode: 94 } // Te comen
+                ]
+            },
+
+            // --- PLANTA 7: LA HAMBRUNA (Supervivencia) ---
+            {
+                id: 7,
+                floor: 7,
+                text: "<p>Has bajado muy profundo. No hay magia ni luz aquí, solo humedad y hambre. Encuentras un manantial subterráneo, pero el agua brilla con un tono sospechoso.</p>",
+                imageGenerationPrompt: "Underground cave lake. Bioluminescent mushrooms. Water glowing faintly purple. Hero looks exhausted.",
+                imageUrl: "https://placehold.co/900x500/001/333?text=Planta+7:+Agua+Dudosa",
+                options: [
+                    { text: "Purificar el agua antes de beber (CLÉRIGO).", nextNode: 8, requiredClass: CLASS_TYPES.CLERIC },
+                    { text: "Identificar toxinas naturales (EXPLORADOR).", nextNode: 8, requiredClass: CLASS_TYPES.RANGER },
+                    { text: "Beber desesperadamente (TRAMPA).", nextNode: 95 }, // Veneno
+                    { text: "Seguir sin beber, sufriendo deshidratación (Estándar - Debilidad).", nextNode: 35 }
+                ]
+            },
+
+            // --- PLANTA 8: EL LABERINTO CIEGO (Supervivencia) ---
             {
                 id: 8,
-                text: "<p>Abres las grandes puertas de hierro. El olor a ozono y sangre inunda tus pulmones. Has entrado en los Barracones de la Legión Oscura.</p><p>Un puente de piedra inestable cruza un abismo insondable. Al otro lado, un grupo de Orcos de Élite bloquea el paso hacia el ascensor.</p>",
-                imageGenerationPrompt: "Underground chasm. A crumbling stone bridge spanning a dark void. On the other side, a group of armored orcs with red glowing eyes waiting. Torchlight reflecting on metal armor.",
-                imageUrl: "https://placehold.co/900x500/220000/red?text=Puente+de+los+Orcos",
+                floor: 8,
+                text: "<p>Un laberinto de obsidiana. La oscuridad es total. Oyes algo arrastrándose en el techo. Si haces ruido, morirás.</p>",
+                imageGenerationPrompt: "Pitch black maze corridors. Abstract geometric shapes. Faint eyes visible in the dark.",
+                imageUrl: "https://placehold.co/900x500/000/111?text=Planta+8:+Oscuridad+Total",
                 options: [
-                    { 
-                        text: "Liderar la carga en el puente (Solo Guerrero).", 
-                        nextNode: 12, 
-                        requiredClass: CLASS_TYPES.WARRIOR 
-                    },
-                    { 
-                        text: "Disparar al líder Orco desde las sombras (Solo Explorador).", 
-                        nextNode: 12, 
-                        requiredClass: CLASS_TYPES.RANGER 
-                    },
-                    { 
-                        text: "Intentar cruzar corriendo bajo la lluvia de flechas.", 
-                        nextNode: 21 // Nodo específico de Herida en Fase 1
-                    }
-                ]
-            },
-            {
-                id: 12,
-                text: "<p>Tu habilidad marcial despeja el camino. Los orcos caen al vacío, sus gritos desvaneciéndose en la oscuridad. El puente resiste lo justo para que cruces.</p><p>Llegas al ascensor de carga y tiras de la palanca. Las cadenas gimen mientras desciendes a las profundidades.</p>",
-                imageGenerationPrompt: "Victory on a bridge. Dead orcs lying on the stone. The hero standing looking at a large wooden elevator mechanism descending into darkness.",
-                imageUrl: "https://placehold.co/900x500/444/000?text=Descenso+Seguro",
-                options: [
-                    { text: "Bajar al siguiente nivel.", nextNode: 13 }
-                ]
-            },
-            // Nodo de Herida Específico para Fase 1
-            {
-                id: 21,
-                text: "<p>Corres por tu vida. Una flecha se clava en tu hombro y otra roza tu pierna. Tropiezas al llegar al otro lado, sangrando profusamente.</p><p>Logras activar el ascensor justo antes de que los orcos te alcancen. Sobrevives, pero estás débil.</p>",
-                imageGenerationPrompt: "Hero badly wounded inside a cage elevator. An arrow sticking out of the shoulder armor. Looking up at angry orcs as the elevator descends.",
-                imageUrl: "https://placehold.co/900x500/400/000?text=Huida+Sangrienta",
-                options: [
-                    { text: "Vendarse y continuar.", nextNode: 13 } // Conecta correctamente con el Nivel 2
+                    { text: "Navegación sigilosa experta (PÍCARO).", nextNode: 9, requiredClass: CLASS_TYPES.ROGUE },
+                    { text: "Sentir las corrientes de aire (EXPLORADOR).", nextNode: 9, requiredClass: CLASS_TYPES.RANGER },
+                    { text: "Encender una antorcha (TRAMPA).", nextNode: 96 }, // Atrae monstruos
+                    { text: "Avanzar palpando la pared (Estándar - Lento/Daño).", nextNode: 36 }
                 ]
             },
 
-            // --- FASE 2: EL SANTUARIO OLVIDADO (Mágico) ---
+            // --- PLANTA 9: EL GUARDIÁN DE LA PUERTA (Sub-Jefe) ---
             {
-                id: 13,
-                text: "<p>El ascensor se detiene con un golpe seco. El aire aquí es gélido, casi sólido. Estás en el Osario Real, el dominio de los muertos.</p><p>Una niebla verde cubre el suelo. Frente a la puerta de salida, un Lich menor flota en el aire, conjurando un muro de hueso que bloqueará tu avance.</p>",
-                imageGenerationPrompt: "Crypt interior. Green ominous fog covering the floor. A floating Lich (undead wizard) in tattered robes casting a purple spell. Glowing runes in the air.",
-                imageUrl: "https://placehold.co/900x500/003300/00ff00?text=El+Lich+Menor",
+                id: 9,
+                floor: 9,
+                text: "<p>La puerta final hacia el piso 10 está custodiada por un Golem de Hierro Negro. Es inmune a casi todo daño físico normal.</p>",
+                imageGenerationPrompt: "Iron Golem blocking a massive door. Spikes, heavy metal texture. Hero looks small compared to it.",
+                imageUrl: "https://placehold.co/900x500/333/555?text=Planta+9:+Golem+de+Hierro",
                 options: [
-                    { 
-                        text: "Lanzar 'Disipar Magia' (Solo Mago).", 
-                        nextNode: 14, 
-                        requiredClass: CLASS_TYPES.MAGE 
-                    },
-                    { 
-                        text: "Invocar 'Fuego Sagrado' (Solo Clérigo).", 
-                        nextNode: 14, 
-                        requiredClass: CLASS_TYPES.CLERIC 
-                    },
-                    { 
-                        text: "Cargar contra el Lich con tu arma.", 
-                        nextNode: 22 // Castigo por usar fuerza bruta contra magia
-                    }
-                ]
-            },
-            {
-                id: 14,
-                text: "<p>Tu magia choca contra la del Lich, destrozando sus defensas. El no-muerto aúlla mientras se desintegra en polvo espectral.</p><p>Entre sus restos encuentras la <strong>Llave de las Sombras</strong>. El camino hacia el final está abierto.</p>",
-                imageGenerationPrompt: "Magical explosion. The Lich disintegrating into dust. A glowing key hovering in the air where the enemy was. Blue magical residue.",
-                imageUrl: "https://placehold.co/900x500/000044/cyan?text=Lich+Derrotado",
-                options: [
-                    { text: "Usar la llave y entrar al laberinto.", nextNode: 15 }
+                    { text: "Desintegrar metal (MAGO).", nextNode: 10, requiredClass: CLASS_TYPES.MAGE },
+                    { text: "Golpear los puntos de tensión estructural (GUERRERO).", nextNode: 10, requiredClass: CLASS_TYPES.WARRIOR },
+                    { text: "Escabullirse entre sus piernas (PÍCARO).", nextNode: 10, requiredClass: CLASS_TYPES.ROGUE },
+                    { text: "Atacar el pecho blindado (TRAMPA).", nextNode: 97 } // Te aplasta
                 ]
             },
 
-            // --- FASE 3: EL LABERINTO DE SOMBRAS (Sigilo) ---
+            // --- PLANTA 10: MALAKAR EL SEÑOR DEL VACÍO (Jefe Final) ---
             {
-                id: 15,
-                text: "<p>La llave abre una puerta de obsidiana. Entras en el <strong>Laberinto de los Susurros</strong>. No hay luz, y el silencio es absoluto.</p><p>Apenas distingues el brillo de cables trampa invisibles. Arriba, en las sombras del techo, escuchas el leve roce de hojas afiladas. Asesinos de la Oscuridad te acechan.</p>",
-                imageGenerationPrompt: "Pitch black corridor with faint moonlight streaks. Reflections of tripwires. Subtle silhouettes of assassins on the ceiling. Tense atmosphere.",
-                imageUrl: "https://placehold.co/900x500/111/333?text=Laberinto+Mortal",
+                id: 10,
+                floor: 10,
+                text: "<p><strong>MALAKAR</strong> te espera. El Señor del Vacío flota sobre un trono de realidad fracturada. Comienza a conjurar el 'Fin de los Tiempos'.</p><p>Tienes UNA oportunidad para usar tu habilidad definitiva.</p>",
+                imageGenerationPrompt: "Final Boss Malakar. Cosmic horror entity, purple energy, floating in a void space. Epic scale.",
+                imageUrl: "https://placehold.co/900x500/200/800?text=PLANTA+10:+BOSS+FINAL",
                 options: [
-                    { 
-                        text: "Desactivar la red de trampas y pasar sigilosamente (Solo Pícaro).", 
-                        nextNode: 16, 
-                        requiredClass: CLASS_TYPES.ROGUE 
-                    },
-                    { 
-                        text: "Rastrear la ruta segura escuchando a los asesinos (Solo Explorador).", 
-                        nextNode: 16, 
-                        requiredClass: CLASS_TYPES.RANGER 
-                    },
-                    { 
-                        text: "Encender una antorcha mágica para ver mejor.", 
-                        nextNode: 24 // Falla y avanza herido
-                    },
-                    { 
-                        text: "Correr protegiéndose con el escudo.", 
-                        nextNode: 24 // Falla y avanza herido
-                    }
-                ]
-            },
-            
-            // --- NUEVO NODO 24: HERIDO EN LA OSCURIDAD (Conecta Fase 3 con Final) ---
-            {
-                id: 24, 
-                text: "<p>¡Grave error! Al revelarte, los asesinos lanzan una lluvia de dardos envenenados. Activas dos trampas al intentar esquivar en pánico.</p><p>Llegas a la salida con la visión borrosa, el veneno ardiendo en tus venas y varias flechas clavadas en tu equipo. Estás vivo, pero en pésimas condiciones para lo que viene.</p>",
-                imageGenerationPrompt: "First person view. Vision blurry and vignetted green (poison). Several darts stuck in a wooden shield or armor. Stumbling towards a large red door.",
-                imageUrl: "https://placehold.co/900x500/002200/00ff00?text=Envenenado+y+Herido",
-                options: [
-                    { text: "Beber el último antídoto y avanzar.", nextNode: 16 }
+                    { text: "¡Golpe del Rompe-Cielos! (GUERRERO)", nextNode: 100, requiredClass: CLASS_TYPES.WARRIOR },
+                    { text: "¡Exorcismo Supremo! (CLÉRIGO)", nextNode: 100, requiredClass: CLASS_TYPES.CLERIC },
+                    { text: "¡Singularidad Arcana! (MAGO)", nextNode: 100, requiredClass: CLASS_TYPES.MAGE },
+                    { text: "¡Asesinato Fantasma! (PÍCARO)", nextNode: 100, requiredClass: CLASS_TYPES.ROGUE },
+                    { text: "¡Flecha Deicida! (EXPLORADOR)", nextNode: 100, requiredClass: CLASS_TYPES.RANGER },
+                    { text: "Atacar con un ataque básico (TRAMPA/MUERTE).", nextNode: 99 } // Muerte instantánea
                 ]
             },
 
-            {
-                id: 16,
-                text: "<p>Superas el laberinto. Ante ti se alza la <strong>Puerta del Trono</strong>, forjada con huesos de dragón y acero negro. Una energía opresiva emana del interior, haciendo vibrar tus propios huesos.</p><p>Sabes que <strong>Malakar</strong> te espera al otro lado. No hay vuelta atrás.</p>",
-                imageGenerationPrompt: "Huge demonic door. Red light pulsing from the cracks. The hero standing small in front of it. Final boss preparation. Smoke rising from the floor.",
-                imageUrl: "https://placehold.co/900x500/220000/FF4500?text=La+Puerta+Final",
-                options: [
-                    { text: "Entrar y enfrentar tu destino.", nextNode: 18 }
-                ]
-            },
+            // --- NODOS DE TRANSICIÓN (Éxito Parcial / Herida) ---
+            { id: 30, floor: 2, text: "<p>Logras trepar, pero te cortas las manos y caes los últimos metros. Estás herido, pero vivo.</p>", imageUrl: "https://placehold.co/900x500/400/000?text=Sobrevives+Herido", options: [{ text: "Continuar.", nextNode: 3 }] },
+            { id: 31, floor: 3, text: "<p>Vences a los orcos, pero recibes una herida profunda en el costado. Necesitarás vendarte.</p>", imageUrl: "https://placehold.co/900x500/400/000?text=Victoria+Costosa", options: [{ text: "Continuar.", nextNode: 4 }] },
+            { id: 32, floor: 4, text: "<p>La descarga mágica quema tu piel, pero logras abrir la puerta a la fuerza.</p>", imageUrl: "https://placehold.co/900x500/400/000?text=Quemaduras+Magicas", options: [{ text: "Continuar.", nextNode: 5 }] },
+            { id: 33, floor: 5, text: "<p>Tu reflejo lucha sucio. Logras romper el espejo, pero tienes cristales clavados en el brazo.</p>", imageUrl: "https://placehold.co/900x500/400/000?text=Cristales+rotos", options: [{ text: "Continuar.", nextNode: 6 }] },
+            { id: 34, floor: 6, text: "<p>Escapas por poco. Una garra esquelética te rasga la espalda antes de que cierres la puerta.</p>", imageUrl: "https://placehold.co/900x500/400/000?text=Rasgu%C3%B1o+Necrotico", options: [{ text: "Continuar.", nextNode: 7 }] },
+            { id: 35, floor: 7, text: "<p>La sed es insoportable. Tu visión se nubla y tus fuerzas flaquean, pero sigues adelante.</p>", imageUrl: "https://placehold.co/900x500/400/000?text=Deshidratacion", options: [{ text: "Continuar.", nextNode: 8 }] },
+            { id: 36, floor: 8, text: "<p>Te golpeas contra las paredes y tropiezas constantemente. Haces ruido, y algo te muerde en la oscuridad antes de que encuentres la salida.</p>", imageUrl: "https://placehold.co/900x500/400/000?text=Mordedura+en+la+Sombra", options: [{ text: "Continuar.", nextNode: 9 }] },
 
-            // --- FASE 4: EL TRONO DEL SEÑOR OSCURO (Clímax) ---
-            {
-                id: 18,
-                text: "<p><strong>MALAKAR, EL SEÑOR DEL VACÍO</strong> se alza ante ti en su trono de huesos. Mide tres metros y su armadura supura oscuridad pura.</p><p><em>'¿Un simple mortal osa desafiarme?'</em> —su voz retumba en tu mente como un trueno—.</p><p>Malakar alza su mano y el aire se desgarra. Una esfera de aniquilación total comienza a formarse. Solo tienes <strong>UNA oportunidad</strong> para interrumpirlo con tu habilidad definitiva antes de que borre tu existencia.</p>",
-                imageGenerationPrompt: "Final Boss. Malakar, a giant void lord in spiked black armor. His face is a swirling vortex of purple energy. Sitting on a throne of bones. Raising a hand charging a massive dark energy ball. Epic scale.",
-                imageUrl: "https://placehold.co/900x500/000/800080?text=MALAKAR+BOSS+FINAL",
-                options: [
-                    { 
-                        text: "¡GOLPE DEL ROMPE-CIELOS! (GUERRERO)", 
-                        nextNode: 20, 
-                        requiredClass: CLASS_TYPES.WARRIOR 
-                    },
-                    { 
-                        text: "¡IRA DE LOS CIELOS! (CLÉRIGO)", 
-                        nextNode: 20, 
-                        requiredClass: CLASS_TYPES.CLERIC 
-                    },
-                    { 
-                        text: "¡DESINTEGRACIÓN ARCANA! (MAGO)", 
-                        nextNode: 20, 
-                        requiredClass: CLASS_TYPES.MAGE 
-                    },
-                    { 
-                        text: "¡DAGA FANTASMA AL CORAZÓN! (PÍCARO)", 
-                        nextNode: 20, 
-                        requiredClass: CLASS_TYPES.ROGUE 
-                    },
-                    { 
-                        text: "¡FLECHA PERFORADORA DE ALMAS! (EXPLORADOR)", 
-                        nextNode: 20, 
-                        requiredClass: CLASS_TYPES.RANGER 
-                    },
-                    { 
-                        text: "Intentar dialogar o suplicar piedad.", 
-                        nextNode: 23 // Muerte instantánea
-                    }
-                ]
-            },
+            // --- NODOS DE MUERTE (TRAMPAS) ---
+            { id: 90, floor: 2, text: "<p>Saltas sin impulso. La gravedad es implacable. Caes al vacío gritando.</p><h2>MUERTE</h2>", imageUrl: "https://placehold.co/900x500/000/red?text=CAIDA+MORTAL", options: [{ text: "Reintentar", nextNode: 1, action: 'RESET' }] },
+            { id: 91, floor: 3, text: "<p>Intentas hablar. El orco se ríe y te clava su hacha en el cráneo.</p><h2>MUERTE</h2>", imageUrl: "https://placehold.co/900x500/000/red?text=DIALOGO+FALLIDO", options: [{ text: "Reintentar", nextNode: 1, action: 'RESET' }] },
+            { id: 92, floor: 4, text: "<p>Al tocar las runas con acero, provocas una reacción en cadena. Explotas.</p><h2>MUERTE</h2>", imageUrl: "https://placehold.co/900x500/000/red?text=EXPLOSION+ARCANA", options: [{ text: "Reintentar", nextNode: 1, action: 'RESET' }] },
+            { id: 93, floor: 5, text: "<p>Tu reflejo te sonríe, te agarra y te tira dentro del espejo. Ahora tú eres el reflejo, atrapado para siempre.</p><h2>MUERTE</h2>", imageUrl: "https://placehold.co/900x500/000/red?text=ATRAPADO", options: [{ text: "Reintentar", nextNode: 1, action: 'RESET' }] },
+            { id: 94, floor: 6, text: "<p>Los esqueletos no se engañan. Te devoran vivo mientras estás en el suelo.</p><h2>MUERTE</h2>", imageUrl: "https://placehold.co/900x500/000/red?text=DEVORADO", options: [{ text: "Reintentar", nextNode: 1, action: 'RESET' }] },
+            { id: 95, floor: 7, text: "<p>El agua estaba llena de veneno de cueva. Mueres entre espasmos en minutos.</p><h2>MUERTE</h2>", imageUrl: "https://placehold.co/900x500/000/red?text=ENVENENADO", options: [{ text: "Reintentar", nextNode: 1, action: 'RESET' }] },
+            { id: 96, floor: 8, text: "<p>La luz atrae a las 'Sombras Acechantes'. No duras ni diez segundos.</p><h2>MUERTE</h2>", imageUrl: "https://placehold.co/900x500/000/red?text=CAZADO", options: [{ text: "Reintentar", nextNode: 1, action: 'RESET' }] },
+            { id: 97, floor: 9, text: "<p>Tu arma rebota en el pecho del Golem. Él te aplasta con un solo puñetazo.</p><h2>MUERTE</h2>", imageUrl: "https://placehold.co/900x500/000/red?text=APLASTADO", options: [{ text: "Reintentar", nextNode: 1, action: 'RESET' }] },
+            { id: 99, floor: 10, text: "<p>Tu ataque mundano ni siquiera rasguña su escudo. Malakar chasquea los dedos y dejas de existir.</p><h2>ANIQUILADO</h2>", imageUrl: "https://placehold.co/900x500/000/red?text=EXISTENCIA+BORRADA", options: [{ text: "Reintentar", nextNode: 1, action: 'RESET' }] },
 
-            // --- FINALES Y MUERTES ---
+            // --- FINAL VICTORIOSO ---
             {
-                id: 20,
-                text: "<p>¡IMPACTO CRÍTICO!</p><p>Tu ataque conecta perfectamente en el núcleo de Malakar antes de que pueda lanzar su hechizo. La energía del vacío implosiona sobre él.</p><p>Con un grito que desgarra la realidad, el Señor Oscuro se disuelve en la nada. La mazmorra comienza a temblar y colapsar. El mal ha sido purgado. Hoy, nace una leyenda.</p><h2>¡VICTORIA!</h2>",
-                imageGenerationPrompt: "Ending scene. The boss exploding in a flash of white light. The hero standing victorious in silhouette. Treasure falling from the ceiling. Credits style.",
-                imageUrl: "https://placehold.co/900x500/FFD700/FFF?text=LEYENDA+VIVA",
+                id: 100,
+                floor: 10,
+                text: "<p>¡IMPACTO PERFECTO! Tu habilidad definitiva atraviesa las defensas de Malakar. El Señor del Vacío grita mientras su forma física colapsa e implosiona.</p><p>La mazmorra tiembla. Has vencido donde todos los demás fallaron.</p><h2>¡VICTORIA LEGENDARIA!</h2>",
+                imageGenerationPrompt: "Epic Victory. Hero standing on top of a defeated void monster. Divine light shining down. Treasure and glory.",
+                imageUrl: "https://placehold.co/900x500/FFD700/FFF?text=CAMPEON+DE+LA+MAZMORRA",
                 options: [
-                    { text: "Jugar Nueva Partida (NG+)", nextNode: 1, action: 'RESET' }
-                ]
-            },
-            {
-                id: 22, // Muerte Fase 2 (Lich)
-                text: "<p>El hechizo del Lich te golpea de lleno. Sientes como tu fuerza vital es drenada en segundos. Te conviertes en una estatua más de su colección para toda la eternidad.</p><h2>GAME OVER</h2>",
-                imageGenerationPrompt: "Game Over screen. A stone statue looking like the hero with a terrified expression. Green fog around.",
-                imageUrl: "https://placehold.co/900x500/000/00FF00?text=GAME+OVER",
-                options: [
-                    { text: "Reintentar", nextNode: 1, action: 'RESET' }
-                ]
-            },
-            {
-                id: 23, // Muerte Fase 4 (Boss)
-                text: "<p>Malakar ríe ante tu vacilación. <em>'Patético'</em>. Con un chasquido de dedos, tu existencia es borrada de la historia. Ni siquiera quedará polvo de tus huesos.</p><h2>ANIQUILADO</h2>",
-                imageGenerationPrompt: "Void. Total blackness with two purple eyes looking down. Text implies total annihilation.",
-                imageUrl: "https://placehold.co/900x500/000/FFF?text=ANIQUILADO",
-                options: [
-                    { text: "Reintentar", nextNode: 1, action: 'RESET' }
+                    { text: "Nueva Partida (NG+)", nextNode: 1, action: 'RESET' }
                 ]
             }
         ];
@@ -471,7 +466,8 @@
             text: document.getElementById('narrative'),
             options: document.getElementById('options'),
             prompt: document.getElementById('prompt-display'),
-            classLabel: document.getElementById('ui-class')
+            classLabel: document.getElementById('ui-class'),
+            floorLabel: document.getElementById('ui-floor')
         };
 
         function initGame() {
@@ -479,7 +475,7 @@
         }
 
         function renderNode(nodeId) {
-            // 1. Buscar el nodo en el array (Data-Driven)
+            // 1. Buscar el nodo
             const node = storyNodes.find(n => n.id === nodeId);
             
             if (!node) {
@@ -487,7 +483,12 @@
                 return;
             }
 
-            // 2. Actualizar Imagen y Prompt (con efecto de carga)
+            // 2. Actualizar UI de Planta (Floor)
+            if (node.floor) {
+                ui.floorLabel.innerHTML = `<i class="fas fa-dungeon"></i> Planta: ${node.floor} / 10`;
+            }
+
+            // 3. Actualizar Imagen
             ui.img.classList.add('loading');
             setTimeout(() => {
                 ui.img.src = node.imageUrl;
@@ -495,28 +496,36 @@
                 ui.img.onload = () => ui.img.classList.remove('loading');
             }, 300);
 
-            // 3. Renderizar Texto
+            // 4. Renderizar Texto
             ui.text.innerHTML = node.text;
 
-            // 4. Renderizar Opciones
+            // 5. Renderizar Opciones (LÓGICA NUEVA)
             ui.options.innerHTML = '';
             
             node.options.forEach(option => {
-                // FILTRADO ESTRICTO: Si la opción requiere una clase y no la tenemos, NO SE MUESTRA.
-                if (option.requiredClass && option.requiredClass !== STATE.playerClass) {
-                    return; 
-                }
-                
                 const btn = document.createElement('div');
                 btn.className = 'btn-choice';
                 
-                btn.onclick = () => selectOption(option);
-
-                if (option.setClass) {
-                    btn.classList.add('class-option');
+                // LÓGICA DE CLASES:
+                // Si la opción requiere clase y NO la tenemos -> MOSTRAR BLOQUEADA (Gris)
+                let isLocked = false;
+                if (option.requiredClass && option.requiredClass !== STATE.playerClass) {
+                    isLocked = true;
+                    btn.classList.add('locked');
+                    // Añadimos candado e indicación de qué clase era necesaria
+                    btn.innerHTML = `<span>${option.text}</span> <span class="icon-lock"><i class="fas fa-lock"></i> (${capitalize(option.requiredClass)})</span>`;
+                } else {
+                    // Opción disponible
+                    btn.innerHTML = `<span>${option.text}</span> <i class="fas fa-chevron-right"></i>`;
+                    btn.onclick = () => selectOption(option);
                 }
 
-                btn.innerHTML = option.text;
+                // Estilo especial si es la opción de TU clase (Dorada)
+                if (option.requiredClass && option.requiredClass === STATE.playerClass) {
+                    btn.classList.add('class-option');
+                    btn.innerHTML = `<span><i class="fas fa-star"></i> ${option.text}</span> <i class="fas fa-check"></i>`;
+                }
+
                 ui.options.appendChild(btn);
             });
         }
@@ -525,16 +534,17 @@
             // Manejo de acciones especiales (Set Class / Reset)
             if (option.setClass) {
                 STATE.playerClass = option.setClass;
-                ui.classLabel.textContent = `Clase: ${STATE.playerClass.toUpperCase()}`;
-                ui.classLabel.style.borderColor = getThemeColor(STATE.playerClass);
+                const className = capitalize(STATE.playerClass);
+                ui.classLabel.innerHTML = `<i class="fas fa-user-shield"></i> Clase: ${className}`;
                 ui.classLabel.style.color = getThemeColor(STATE.playerClass);
+                ui.classLabel.style.borderColor = getThemeColor(STATE.playerClass);
             }
 
             if (option.action === 'RESET') {
                 STATE.playerClass = null;
-                ui.classLabel.textContent = "Clase: Ninguna";
-                ui.classLabel.style.borderColor = "#b45309";
+                ui.classLabel.innerHTML = `<i class="fas fa-user-shield"></i> Clase: Ninguna`;
                 ui.classLabel.style.color = "#b45309";
+                ui.classLabel.style.borderColor = "#b45309";
             }
 
             // Navegación
@@ -544,16 +554,20 @@
             }
         }
 
-        // Helper estético
+        // Helpers
         function getThemeColor(cls) {
             switch(cls) {
                 case CLASS_TYPES.MAGE: return '#3b82f6'; // Azul
-                case CLASS_TYPES.ROGUE: return '#10b981'; // Verde Esmeralda
+                case CLASS_TYPES.ROGUE: return '#10b981'; // Verde
                 case CLASS_TYPES.WARRIOR: return '#ef4444'; // Rojo
-                case CLASS_TYPES.CLERIC: return '#facc15'; // Amarillo/Dorado
-                case CLASS_TYPES.RANGER: return '#65a30d'; // Verde Bosque/Oliva
+                case CLASS_TYPES.CLERIC: return '#facc15'; // Amarillo
+                case CLASS_TYPES.RANGER: return '#65a30d'; // Verde Oliva
                 default: return '#b45309';
             }
+        }
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
         }
 
         // Arrancar

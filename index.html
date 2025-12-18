@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecos de la Mazmorra - Motor de Novela Gráfica</title>
+    <!-- Tipografía temática -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- ESTILOS TEMÁTICOS (DARK FANTASY) --- */
+        :root {
+            --bg-color: #050505;
+            --panel-bg: #121212;
+            --text-main: #d1d5db;
+            --text-highlight: #f3f4f6;
+            --accent-red: #7f1d1d;
+            --accent-gold: #b45309;
+            --border-color: #444;
+            --font-display: 'Cinzel', serif;
+            --font-body: 'Merriweather', serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Contenedor Principal */
+        #game-engine {
+            width: 100%;
+            max-width: 900px;
+            height: 95vh;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 60px rgba(0,0,0,0.8);
+            display: grid;
+            grid-template-rows: 50% 1fr auto;
+            position: relative;
+        }
+
+        /* Zona Visual */
+        .viewport {
+            position: relative;
+            background: #000;
+            overflow: hidden;
+            border-bottom: 2px solid var(--accent-gold);
+        }
+
+        .viewport img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.5s ease-in-out;
+            opacity: 1;
+        }
+        
+        .viewport img.loading {
+            opacity: 0;
+        }
+
+        /* Overlay de Debug (Para ver tus Prompts) */
+        .debug-prompt {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff9d;
+            font-family: monospace;
+            font-size: 0.75rem;
+            padding: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            border-top: 1px solid #00ff9d;
+        }
+        
+        .viewport:hover .debug-prompt {
+            opacity: 1;
+        }
+
+        /* Zona Narrativa */
+        .narrative-box {
+            padding: 2rem;
+            overflow-y: auto;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+
+        .narrative-box p {
+            margin-bottom: 1rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        /* Zona de Opciones */
+        .options-box {
+            padding: 1.5rem;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-choice {
+            background: linear-gradient(90deg, #1a1a1a, #2a2a2a);
+            border: 1px solid #333;
+            color: var(--text-highlight);
+            padding: 1rem 1.5rem;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-choice:hover {
+            border-color: var(--accent-gold);
+            transform: translateX(5px);
+            background: linear-gradient(90deg, #2a2a2a, #3a3a3a);
+        }
+
+        /* Estilos condicionales para clases */
+        .btn-choice.class-option {
+            border-left: 3px solid var(--accent-gold);
+        }
+
+        .btn-choice.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        /* UI de Estado */
+        .status-bar {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--accent-gold);
+            padding: 0.5rem 1rem;
+            font-family: var(--font-display);
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            z-index: 10;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            #game-engine { height: 100vh; grid-template-rows: 35% 1fr auto; }
+            .narrative-box { padding: 1.2rem; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-engine">
+        <div class="viewport">
+            <div id="ui-class" class="status-bar">Clase: Ninguna</div>
+            <img id="scene-image" src="" alt="Scene">
+            <div id="prompt-display" class="debug-prompt">Prompt: ...</div>
+        </div>
+
+        <div id="narrative" class="narrative-box">
+            <!-- El texto se inyecta aquí -->
+        </div>
+
+        <div id="options" class="options-box">
+            <!-- Los botones se inyectan aquí -->
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ------------------------------------------------------------------
+         * CONFIGURACIÓN & ESTADO
+         * ------------------------------------------------------------------
+         */
+        const STATE = {
+            playerClass: null,
+            currentNodeId: 1 // Empezamos en el ID 1
+        };
+
+        const CLASS_TYPES = {
+            WARRIOR: 'guerrero',
+            ROGUE: 'picaro',
+            MAGE: 'mago',
+            CLERIC: 'clerigo',    // NUEVO
+            RANGER: 'explorador'  // NUEVO
+        };
+
+        /**
+         * ------------------------------------------------------------------
+         * BASE DE DATOS DE HISTORIA (Story Nodes)
+         * ------------------------------------------------------------------
+         * Estructura estricta: id, text, imageGenerationPrompt, imageUrl, options
+         */
+        const storyNodes = [
+            {
+                id: 1,
+                text: "<p>El viento aúlla a través de las grietas de la montaña. Ante ti se alza la entrada prohibida a las Catacumbas de Aethelgard. Nadie ha regresado en siglos.</p><p>Antes de cruzar el umbral, reflexionas sobre el entrenamiento que te ha traído hasta aquí...</p>",
+                imageGenerationPrompt: "Dark fantasy landscape. A massive, ancient stone doorway carved into a jagged mountain cliff. Stormy grey sky, fog swirling around the entrance. Runes glowing faintly in blue. Cinematic, detailed matte painting.",
+                imageUrl: "https://placehold.co/900x500/111/444?text=Entrada+a+la+Mazmorra",
+                options: [
+                    { 
+                        text: "Soy un GUERRERO, mi espada es mi ley.", 
+                        nextNode: 2, 
+                        setClass: CLASS_TYPES.WARRIOR 
+                    },
+                    { 
+                        text: "Soy un PÍCARO, las sombras son mi hogar.", 
+                        nextNode: 2, 
+                        setClass: CLASS_TYPES.ROGUE 
+                    },
+                    { 
+                        text: "Soy un MAGO, el conocimiento es poder.", 
+                        nextNode: 2, 
+                        setClass: CLASS_TYPES.MAGE 
+                    },
+                    { 
+                        text: "Soy un CLÉRIGO, la luz divina es mi guía.", 
+                        nextNode: 2, 
+                        setClass: CLASS_TYPES.CLERIC 
+                    },
+                    { 
+                        text: "Soy un EXPLORADOR, conozco cada rastro y sendero.", 
+                        nextNode: 2, 
+                        setClass: CLASS_TYPES.RANGER 
+                    }
+                ]
+            },
+            {
+                id: 2,
+                text: "<p>Desciendes por la escalera de caracol. La oscuridad es absoluta hasta que enciendes una antorcha. Llegas a una sala circular con tres caminos.</p><p>En el centro, un altar antiguo parece requerir un sacrificio o una plegaria.</p>",
+                imageGenerationPrompt: "Dungeon interior. A circular stone chamber illuminated by torchlight. Three dark corridors branching off. In the center, a bloodstained stone altar with strange carvings. High contrast, ominous shadows.",
+                imageUrl: "https://placehold.co/900x500/221100/orange?text=Sala+del+Altar",
+                options: [
+                    { 
+                        text: "Examinar el camino de la izquierda (Ruido metálico).", 
+                        nextNode: 3 
+                    },
+                    { 
+                        text: "Leer las runas del altar (Solo Mago).", 
+                        nextNode: 4, 
+                        requiredClass: CLASS_TYPES.MAGE 
+                    },
+                    { 
+                        text: "Purificar el altar corrupto (Solo Clérigo).", 
+                        nextNode: 9, 
+                        requiredClass: CLASS_TYPES.CLERIC 
+                    },
+                    { 
+                        text: "Buscar mecanismos ocultos en el suelo (Solo Pícaro).", 
+                        nextNode: 5, 
+                        requiredClass: CLASS_TYPES.ROGUE 
+                    },
+                    { 
+                        text: "Analizar huellas en el polvo (Solo Explorador).", 
+                        nextNode: 10, 
+                        requiredClass: CLASS_TYPES.RANGER 
+                    },
+                    { 
+                        text: "Ignorar todo y avanzar al frente.", 
+                        nextNode: 6 
+                    }
+                ]
+            },
+            {
+                id: 3,
+                text: "<p>¡Emboscada! Un esqueleto armado surge de las sombras con una espada oxidada. No hay tiempo para pensar.</p>",
+                imageGenerationPrompt: "Action shot. An animated skeleton warrior lunging forward with a rusty sword. Dynamic angle, motion blur. Background is a dark dungeon corridor. Blue eyes glowing in the skull.",
+                imageUrl: "https://placehold.co/900x500/300/red?text=Combate+Esqueleto",
+                options: [
+                    { 
+                        text: "Golpear con fuerza bruta (Solo Guerrero).", 
+                        nextNode: 7, 
+                        requiredClass: CLASS_TYPES.WARRIOR 
+                    },
+                    { 
+                        text: "Expulsar no-muertos (Solo Clérigo).", 
+                        nextNode: 11, 
+                        requiredClass: CLASS_TYPES.CLERIC 
+                    },
+                    { 
+                        text: "Intentar esquivar y huir.", 
+                        nextNode: 6 
+                    }
+                ]
+            },
+            {
+                id: 4,
+                text: "<p>Tus conocimientos arcanos te permiten descifrar la inscripción: <em>'Solo el valiente pasa, el necio perece'</em>. Al pronunciar las palabras, un pasadizo secreto se abre iluminado por luz azul.</p>",
+                imageGenerationPrompt: "Magical effect. A stone wall sliding open to reveal a secret passage glowing with ethereal blue light. Dust particles floating in the air. Mystical atmosphere.",
+                imageUrl: "https://placehold.co/900x500/000033/cyan?text=Pasadizo+Secreto",
+                options: [
+                    { text: "Entrar en el pasadizo.", nextNode: 8 }
+                ]
+            },
+            {
+                id: 5,
+                text: "<p>Tus dedos ágiles encuentran una placa de presión falsa. Al desactivarla, una sección de la pared se desliza, revelando un cofre del tesoro olvidado por el tiempo.</p>",
+                imageGenerationPrompt: "Close up detail. A wooden treasure chest covered in cobwebs and dust, slightly open, revealing gold coins inside. Dungeon stone wall background. Torchlight reflection on gold.",
+                imageUrl: "https://placehold.co/900x500/332200/gold?text=Tesoro+Encontrado",
+                options: [
+                    { text: "Tomar el botín y seguir.", nextNode: 8 }
+                ]
+            },
+            {
+                id: 6,
+                text: "<p>Avanzas a trompicones. El camino es peligroso y sufres varios cortes con las trampas activadas. Llegas al final del pasillo, herido pero vivo.</p>",
+                imageGenerationPrompt: "First person view. Looking down at scratched and dirty hands/gloves. A long dark corridor stretching ahead with spikes visible on the walls. Gritty, painful atmosphere.",
+                imageUrl: "https://placehold.co/900x500/330000/white?text=Trampas+y+Heridas",
+                options: [
+                    { text: "Descansar un momento.", nextNode: 8 }
+                ]
+            },
+            {
+                id: 7,
+                text: "<p>Tu golpe es certero. El esqueleto se desmorona en una pila de huesos inútiles. Tu fuerza es tu mayor aliada en este lugar maldito.</p>",
+                imageGenerationPrompt: "Victory scene. A pile of broken bones on the floor. A sword resting tip-down on the ground. Dust settling. Dramatic lighting.",
+                imageUrl: "https://placehold.co/900x500/555/fff?text=Victoria+Brutal",
+                options: [
+                    { text: "Continuar.", nextNode: 8 }
+                ]
+            },
+            {
+                id: 8,
+                text: "<p>Has llegado al corazón de la primera planta. Una gran puerta doble se alza ante ti. Esto es solo el comienzo...</p><p><em>(Fin de la Demo Técnica)</em></p>",
+                imageGenerationPrompt: "Epic fantasy scale. Massive double doors made of iron and obsidian. Intricate carvings of dragons and demons. The doors are slightly ajar, revealing a warm light inside. Sense of scale and awe.",
+                imageUrl: "https://placehold.co/900x500/000/fff?text=Fin+de+la+Demo",
+                options: [
+                    { text: "Reiniciar Aventura", nextNode: 1, action: 'RESET' }
+                ]
+            },
+            // --- NUEVOS NODOS PARA CLÉRIGO Y EXPLORADOR ---
+            {
+                id: 9,
+                text: "<p>Invocas a tu deidad y purificas la piedra manchada de sangre. El altar brilla con una cálida luz dorada, disipando las sombras y revelando un mecanismo seguro que abre el camino.</p>",
+                imageGenerationPrompt: "Divine magic. A stone altar glowing with warm golden light, dispelling shadows. Holy symbols appearing in the air. Peaceful atmosphere.",
+                imageUrl: "https://placehold.co/900x500/FFD700/000?text=Luz+Divina",
+                options: [
+                    { text: "Avanzar con la bendición.", nextNode: 8 }
+                ]
+            },
+            {
+                id: 10,
+                text: "<p>Tus ojos de cazador leen el suelo como un mapa. Notas marcas de arrastre hacia el frente (trampas) y huellas esqueléticas a la izquierda. Sin embargo, una leve corriente de aire te indica un pasaje seguro detrás de un tapiz.</p>",
+                imageGenerationPrompt: "Close up of dusty floor. Footprints and drag marks visible in the dust. A hand pointing at a hidden crack in the wall behind a tapestry. Detailed texture.",
+                imageUrl: "https://placehold.co/900x500/556B2F/FFF?text=Rastro+Oculto",
+                options: [
+                    { text: "Usar el atajo seguro.", nextNode: 8 }
+                ]
+            },
+            {
+                id: 11,
+                text: "<p>Alzas tu símbolo sagrado y recitas una plegaria. La luz divina estalla desde tu mano, desintegrando los huesos del esqueleto en polvo antes de que pueda tocarte.</p>",
+                imageGenerationPrompt: "Action scene. A cleric holding a glowing holy symbol. A skeleton enemy disintegrating into dust/ash in front of the light. Dramatic shadows.",
+                imageUrl: "https://placehold.co/900x500/FFF/000?text=Expulsion+Sagrada",
+                options: [
+                    { text: "Continuar.", nextNode: 8 }
+                ]
+            }
+        ];
+
+        /**
+         * ------------------------------------------------------------------
+         * MOTOR DEL JUEGO (GAME ENGINE)
+         * ------------------------------------------------------------------
+         */
+
+        const ui = {
+            img: document.getElementById('scene-image'),
+            text: document.getElementById('narrative'),
+            options: document.getElementById('options'),
+            prompt: document.getElementById('prompt-display'),
+            classLabel: document.getElementById('ui-class')
+        };
+
+        function initGame() {
+            renderNode(STATE.currentNodeId);
+        }
+
+        function renderNode(nodeId) {
+            // 1. Buscar el nodo en el array (Data-Driven)
+            const node = storyNodes.find(n => n.id === nodeId);
+            
+            if (!node) {
+                console.error("Nodo no encontrado:", nodeId);
+                return;
+            }
+
+            // 2. Actualizar Imagen y Prompt (con efecto de carga)
+            ui.img.classList.add('loading');
+            setTimeout(() => {
+                ui.img.src = node.imageUrl;
+                ui.prompt.textContent = `PROMPT: ${node.imageGenerationPrompt}`; // Para tu uso como diseñador
+                ui.img.onload = () => ui.img.classList.remove('loading');
+            }, 300);
+
+            // 3. Renderizar Texto
+            ui.text.innerHTML = node.text;
+
+            // 4. Renderizar Opciones
+            ui.options.innerHTML = '';
+            
+            node.options.forEach(option => {
+                // FILTRADO ESTRICTO: Si la opción requiere una clase específica y no la tenemos, la saltamos por completo.
+                if (option.requiredClass && option.requiredClass !== STATE.playerClass) {
+                    return; // No renderizar nada
+                }
+                
+                const btn = document.createElement('div');
+                btn.className = 'btn-choice';
+                
+                // Como ya filtramos antes, aquí siempre añadimos el evento click
+                btn.onclick = () => selectOption(option);
+
+                if (option.setClass) {
+                    btn.classList.add('class-option');
+                }
+
+                btn.innerHTML = option.text;
+                ui.options.appendChild(btn);
+            });
+        }
+
+        function selectOption(option) {
+            // Manejo de acciones especiales (Set Class / Reset)
+            if (option.setClass) {
+                STATE.playerClass = option.setClass;
+                ui.classLabel.textContent = `Clase: ${STATE.playerClass.toUpperCase()}`;
+                ui.classLabel.style.borderColor = getThemeColor(STATE.playerClass);
+                ui.classLabel.style.color = getThemeColor(STATE.playerClass);
+            }
+
+            if (option.action === 'RESET') {
+                STATE.playerClass = null;
+                ui.classLabel.textContent = "Clase: Ninguna";
+                ui.classLabel.style.borderColor = "#b45309";
+                ui.classLabel.style.color = "#b45309";
+            }
+
+            // Navegación
+            if (option.nextNode) {
+                STATE.currentNodeId = option.nextNode;
+                renderNode(STATE.currentNodeId);
+            }
+        }
+
+        // Helper estético
+        function getThemeColor(cls) {
+            switch(cls) {
+                case CLASS_TYPES.MAGE: return '#3b82f6'; // Azul
+                case CLASS_TYPES.ROGUE: return '#10b981'; // Verde Esmeralda
+                case CLASS_TYPES.WARRIOR: return '#ef4444'; // Rojo
+                case CLASS_TYPES.CLERIC: return '#facc15'; // Amarillo/Dorado
+                case CLASS_TYPES.RANGER: return '#65a30d'; // Verde Bosque/Oliva
+                default: return '#b45309';
+            }
+        }
+        
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        // Arrancar
+        window.onload = initGame;
+
+    </script>
+</body>
+</html>

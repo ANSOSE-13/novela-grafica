@@ -202,48 +202,28 @@
             WARRIOR: 'guerrero',
             ROGUE: 'picaro',
             MAGE: 'mago',
-            CLERIC: 'clerigo',    // NUEVO
-            RANGER: 'explorador'  // NUEVO
+            CLERIC: 'clerigo',    
+            RANGER: 'explorador'  
         };
 
         /**
          * ------------------------------------------------------------------
          * BASE DE DATOS DE HISTORIA (Story Nodes)
          * ------------------------------------------------------------------
-         * Estructura estricta: id, text, imageGenerationPrompt, imageUrl, options
          */
         const storyNodes = [
+            // --- FASE 0: CREACIÓN Y TUTORIAL ---
             {
                 id: 1,
                 text: "<p>El viento aúlla a través de las grietas de la montaña. Ante ti se alza la entrada prohibida a las Catacumbas de Aethelgard. Nadie ha regresado en siglos.</p><p>Antes de cruzar el umbral, reflexionas sobre el entrenamiento que te ha traído hasta aquí...</p>",
                 imageGenerationPrompt: "Dark fantasy landscape. A massive, ancient stone doorway carved into a jagged mountain cliff. Stormy grey sky, fog swirling around the entrance. Runes glowing faintly in blue. Cinematic, detailed matte painting.",
                 imageUrl: "https://placehold.co/900x500/111/444?text=Entrada+a+la+Mazmorra",
                 options: [
-                    { 
-                        text: "Soy un GUERRERO, mi espada es mi ley.", 
-                        nextNode: 2, 
-                        setClass: CLASS_TYPES.WARRIOR 
-                    },
-                    { 
-                        text: "Soy un PÍCARO, las sombras son mi hogar.", 
-                        nextNode: 2, 
-                        setClass: CLASS_TYPES.ROGUE 
-                    },
-                    { 
-                        text: "Soy un MAGO, el conocimiento es poder.", 
-                        nextNode: 2, 
-                        setClass: CLASS_TYPES.MAGE 
-                    },
-                    { 
-                        text: "Soy un CLÉRIGO, la luz divina es mi guía.", 
-                        nextNode: 2, 
-                        setClass: CLASS_TYPES.CLERIC 
-                    },
-                    { 
-                        text: "Soy un EXPLORADOR, conozco cada rastro y sendero.", 
-                        nextNode: 2, 
-                        setClass: CLASS_TYPES.RANGER 
-                    }
+                    { text: "Soy un GUERRERO, mi espada es mi ley.", nextNode: 2, setClass: CLASS_TYPES.WARRIOR },
+                    { text: "Soy un PÍCARO, las sombras son mi hogar.", nextNode: 2, setClass: CLASS_TYPES.ROGUE },
+                    { text: "Soy un MAGO, el conocimiento es poder.", nextNode: 2, setClass: CLASS_TYPES.MAGE },
+                    { text: "Soy un CLÉRIGO, la luz divina es mi guía.", nextNode: 2, setClass: CLASS_TYPES.CLERIC },
+                    { text: "Soy un EXPLORADOR, conozco cada rastro y sendero.", nextNode: 2, setClass: CLASS_TYPES.RANGER }
                 ]
             },
             {
@@ -252,34 +232,12 @@
                 imageGenerationPrompt: "Dungeon interior. A circular stone chamber illuminated by torchlight. Three dark corridors branching off. In the center, a bloodstained stone altar with strange carvings. High contrast, ominous shadows.",
                 imageUrl: "https://placehold.co/900x500/221100/orange?text=Sala+del+Altar",
                 options: [
-                    { 
-                        text: "Examinar el camino de la izquierda (Ruido metálico).", 
-                        nextNode: 3 
-                    },
-                    { 
-                        text: "Leer las runas del altar (Solo Mago).", 
-                        nextNode: 4, 
-                        requiredClass: CLASS_TYPES.MAGE 
-                    },
-                    { 
-                        text: "Purificar el altar corrupto (Solo Clérigo).", 
-                        nextNode: 9, 
-                        requiredClass: CLASS_TYPES.CLERIC 
-                    },
-                    { 
-                        text: "Buscar mecanismos ocultos en el suelo (Solo Pícaro).", 
-                        nextNode: 5, 
-                        requiredClass: CLASS_TYPES.ROGUE 
-                    },
-                    { 
-                        text: "Analizar huellas en el polvo (Solo Explorador).", 
-                        nextNode: 10, 
-                        requiredClass: CLASS_TYPES.RANGER 
-                    },
-                    { 
-                        text: "Ignorar todo y avanzar al frente.", 
-                        nextNode: 6 
-                    }
+                    { text: "Examinar el camino de la izquierda (Ruido metálico).", nextNode: 3 },
+                    { text: "Leer las runas del altar (Solo Mago).", nextNode: 4, requiredClass: CLASS_TYPES.MAGE },
+                    { text: "Purificar el altar corrupto (Solo Clérigo).", nextNode: 9, requiredClass: CLASS_TYPES.CLERIC },
+                    { text: "Buscar mecanismos ocultos en el suelo (Solo Pícaro).", nextNode: 5, requiredClass: CLASS_TYPES.ROGUE },
+                    { text: "Analizar huellas en el polvo (Solo Explorador).", nextNode: 10, requiredClass: CLASS_TYPES.RANGER },
+                    { text: "Ignorar todo y avanzar al frente.", nextNode: 6 }
                 ]
             },
             {
@@ -288,93 +246,196 @@
                 imageGenerationPrompt: "Action shot. An animated skeleton warrior lunging forward with a rusty sword. Dynamic angle, motion blur. Background is a dark dungeon corridor. Blue eyes glowing in the skull.",
                 imageUrl: "https://placehold.co/900x500/300/red?text=Combate+Esqueleto",
                 options: [
+                    { text: "Golpear con fuerza bruta (Solo Guerrero).", nextNode: 7, requiredClass: CLASS_TYPES.WARRIOR },
+                    { text: "Expulsar no-muertos (Solo Clérigo).", nextNode: 11, requiredClass: CLASS_TYPES.CLERIC },
+                    { text: "Intentar esquivar y huir.", nextNode: 6 }
+                ]
+            },
+            { id: 4, text: "<p>Descifras la inscripción arcana. Un pasadizo secreto se abre iluminado por luz azul, permitiéndote evitar las trampas.</p>", imageGenerationPrompt: "Magical effect. A stone wall sliding open to reveal a secret passage glowing with ethereal blue light.", imageUrl: "https://placehold.co/900x500/000033/cyan?text=Pasadizo+Secreto", options: [{ text: "Entrar.", nextNode: 8 }] },
+            { id: 5, text: "<p>Desactivas una placa de presión y encuentras un cofre oculto con equipo mejorado. Te sientes preparado para lo que viene.</p>", imageGenerationPrompt: "Close up. Treasure chest revealing gold and potions.", imageUrl: "https://placehold.co/900x500/332200/gold?text=Tesoro+Encontrado", options: [{ text: "Continuar.", nextNode: 8 }] },
+            { id: 6, text: "<p>Huyes a través del pasillo lleno de trampas. Sufres cortes profundos y pierdes parte de tu equipo, pero sobrevives de milagro.</p>", imageGenerationPrompt: "First person view. Bleeding hands, dark corridor with spikes.", imageUrl: "https://placehold.co/900x500/330000/white?text=Herido+y+Cansado", options: [{ text: "Continuar a duras penas.", nextNode: 8 }] },
+            { id: 7, text: "<p>Destrozas al esqueleto de un solo golpe. Tu fuerza es inigualable.</p>", imageGenerationPrompt: "Victory. Broken bones scattered on the floor.", imageUrl: "https://placehold.co/900x500/555/fff?text=Victoria", options: [{ text: "Continuar.", nextNode: 8 }] },
+            { id: 9, text: "<p>Tu plegaria purifica el altar. Una luz cálida te otorga una bendición de protección para el viaje.</p>", imageGenerationPrompt: "Holy light shining from a stone altar.", imageUrl: "https://placehold.co/900x500/FFD700/000?text=Bendicion", options: [{ text: "Avanzar.", nextNode: 8 }] },
+            { id: 10, text: "<p>Sigues el rastro seguro, evitando todas las emboscadas y trampas como un fantasma.</p>", imageGenerationPrompt: "Dusty floor with footprints illuminated by a lantern.", imageUrl: "https://placehold.co/900x500/556B2F/FFF?text=Rastro+Seguro", options: [{ text: "Avanzar.", nextNode: 8 }] },
+            { id: 11, text: "<p>El esqueleto se convierte en polvo ante tu fe.</p>", imageGenerationPrompt: "Skeleton disintegrating in holy light.", imageUrl: "https://placehold.co/900x500/FFF/000?text=Expulsion", options: [{ text: "Avanzar.", nextNode: 8 }] },
+
+            // --- FASE 1: LAS PROFUNDIDADES (Plantas 1-3) - FÍSICO ---
+            {
+                id: 8,
+                text: "<p>Abres las grandes puertas de hierro. El olor a ozono y sangre es más fuerte aquí. Has entrado en los Barracones de la Legión Oscura.</p><p>Un puente de piedra inestable cruza un abismo. Al otro lado, un grupo de Orcos bloquea el paso.</p>",
+                imageGenerationPrompt: "Underground chasm. A crumbling stone bridge spanning a dark void. On the other side, a group of armored orcs with red glowing eyes waiting. Torchlight reflecting on metal armor.",
+                imageUrl: "https://placehold.co/900x500/220000/red?text=Puente+de+los+Orcos",
+                options: [
                     { 
-                        text: "Golpear con fuerza bruta (Solo Guerrero).", 
-                        nextNode: 7, 
+                        text: "Liderar la carga en el puente (Solo Guerrero).", 
+                        nextNode: 12, 
                         requiredClass: CLASS_TYPES.WARRIOR 
                     },
                     { 
-                        text: "Expulsar no-muertos (Solo Clérigo).", 
-                        nextNode: 11, 
-                        requiredClass: CLASS_TYPES.CLERIC 
+                        text: "Disparar al líder Orco desde lejos (Solo Explorador).", 
+                        nextNode: 12, 
+                        requiredClass: CLASS_TYPES.RANGER 
                     },
                     { 
-                        text: "Intentar esquivar y huir.", 
-                        nextNode: 6 
+                        text: "Intentar cruzar corriendo mientras te ven.", 
+                        nextNode: 21 // Nodo de daño/fracaso parcial
                     }
                 ]
             },
             {
-                id: 4,
-                text: "<p>Tus conocimientos arcanos te permiten descifrar la inscripción: <em>'Solo el valiente pasa, el necio perece'</em>. Al pronunciar las palabras, un pasadizo secreto se abre iluminado por luz azul.</p>",
-                imageGenerationPrompt: "Magical effect. A stone wall sliding open to reveal a secret passage glowing with ethereal blue light. Dust particles floating in the air. Mystical atmosphere.",
-                imageUrl: "https://placehold.co/900x500/000033/cyan?text=Pasadizo+Secreto",
+                id: 12,
+                text: "<p>Tu habilidad marcial despeja el camino. Los orcos caen al vacío o mueren bajo tu acero/flechas. El puente resiste lo justo para que cruces.</p><p>Llegas al ascensor de carga que baja a las profundidades.</p>",
+                imageGenerationPrompt: "Victory on a bridge. Dead orcs lying on the stone. The hero standing looking at a large wooden elevator mechanism descending into darkness.",
+                imageUrl: "https://placehold.co/900x500/444/000?text=Puente+Despejado",
                 options: [
-                    { text: "Entrar en el pasadizo.", nextNode: 8 }
+                    { text: "Bajar al siguiente nivel.", nextNode: 13 }
+                ]
+            },
+
+            // --- FASE 2: EL SANTUARIO OLVIDADO (Plantas 4-6) - MÁGICO ---
+            {
+                id: 13,
+                text: "<p>El ascensor se detiene con un chirrido metálico. El aire aquí es gélido. Estás en el Osario Real.</p><p>Una niebla verde cubre el suelo. Frente a ti, un Lich menor conjura un hechizo de muerte que bloqueará la salida para siempre si no actúas YA.</p>",
+                imageGenerationPrompt: "Crypt interior. Green ominous fog covering the floor. A floating Lich (undead wizard) in tattered robes casting a purple spell. Glowing runes in the air.",
+                imageUrl: "https://placehold.co/900x500/003300/00ff00?text=El+Lich+Menor",
+                options: [
+                    { 
+                        text: "Contrahechizo: Disipar Magia (Solo Mago).", 
+                        nextNode: 14, 
+                        requiredClass: CLASS_TYPES.MAGE 
+                    },
+                    { 
+                        text: "Invocar Fuego Sagrado (Solo Clérigo).", 
+                        nextNode: 14, 
+                        requiredClass: CLASS_TYPES.CLERIC 
+                    },
+                    { 
+                        text: "Cargar contra el Lich antes de que termine el hechizo.", 
+                        nextNode: 22 // Muerte probable o mucho daño
+                    }
                 ]
             },
             {
-                id: 5,
-                text: "<p>Tus dedos ágiles encuentran una placa de presión falsa. Al desactivarla, una sección de la pared se desliza, revelando un cofre del tesoro olvidado por el tiempo.</p>",
-                imageGenerationPrompt: "Close up detail. A wooden treasure chest covered in cobwebs and dust, slightly open, revealing gold coins inside. Dungeon stone wall background. Torchlight reflection on gold.",
-                imageUrl: "https://placehold.co/900x500/332200/gold?text=Tesoro+Encontrado",
+                id: 14,
+                text: "<p>La magia del Lich se rompe en mil pedazos. El no-muerto chilla mientras su forma física se desintegra. La barrera cae.</p><p>Entre sus restos encuentras la Llave de las Sombras, necesaria para descender más.</p>",
+                imageGenerationPrompt: "Magical explosion. The Lich disintegrating into dust. A glowing key hovering in the air where the enemy was. Blue magical residue.",
+                imageUrl: "https://placehold.co/900x500/000044/cyan?text=Lich+Derrotado",
                 options: [
-                    { text: "Tomar el botín y seguir.", nextNode: 8 }
+                    { text: "Usar la llave y descender.", nextNode: 15 }
+                ]
+            },
+
+            // --- FASE 3: EL LABERINTO DE SOMBRAS (Plantas 7-9) - SIGILO ---
+            {
+                id: 15,
+                text: "<p>La llave abre una puerta de obsidiana. Entras en el Laberinto de los Susurros. No hay luz aquí, y el suelo está lleno de cables trampa invisibles y placas de presión.</p><p>Escuchas la respiración de asesinos invisibles acechando en el techo.</p>",
+                imageGenerationPrompt: "Pitch black corridor with faint moonlight streaks. Reflections of tripwires. Subtle silhouettes of assassins on the ceiling. Tense atmosphere.",
+                imageUrl: "https://placehold.co/900x500/111/333?text=Laberinto+Mortal",
+                options: [
+                    { 
+                        text: "Desactivar la red de trampas y pasar sigilosamente (Solo Pícaro).", 
+                        nextNode: 16, 
+                        requiredClass: CLASS_TYPES.ROGUE 
+                    },
+                    { 
+                        text: "Detectar a los asesinos por el sonido de su respiración (Solo Explorador).", 
+                        nextNode: 16, 
+                        requiredClass: CLASS_TYPES.RANGER 
+                    },
+                    { 
+                        text: "Iluminar la sala con magia (Atraerá a todos).", 
+                        nextNode: 21 
+                    },
+                    { 
+                        text: "Correr con el escudo en alto.", 
+                        nextNode: 21 
+                    }
                 ]
             },
             {
-                id: 6,
-                text: "<p>Avanzas a trompicones. El camino es peligroso y sufres varios cortes con las trampas activadas. Llegas al final del pasillo, herido pero vivo.</p>",
-                imageGenerationPrompt: "First person view. Looking down at scratched and dirty hands/gloves. A long dark corridor stretching ahead with spikes visible on the walls. Gritty, painful atmosphere.",
-                imageUrl: "https://placehold.co/900x500/330000/white?text=Trampas+y+Heridas",
+                id: 16,
+                text: "<p>Te mueves como un fantasma. Los asesinos no te detectan hasta que es demasiado tarde, o simplemente los evitas. Llegas a la gran puerta final.</p><p>Detrás de ella sientes una presencia abrumadora. El Señor Oscuro te espera.</p>",
+                imageGenerationPrompt: "Huge demonic door. Red light pulsing from the cracks. The hero standing small in front of it. Final boss preparation.",
+                imageUrl: "https://placehold.co/900x500/220000/FF4500?text=La+Puerta+Final",
                 options: [
-                    { text: "Descansar un momento.", nextNode: 8 }
+                    { text: "Entrar y enfrentar el destino.", nextNode: 18 }
+                ]
+            },
+
+            // --- FASE 4: EL TRONO DEL SEÑOR OSCURO (Planta 10) - CLÍMAX ---
+            {
+                id: 18,
+                text: "<p><strong>MALAKAR, EL SEÑOR DEL VACÍO</strong> se alza ante ti en su trono de huesos negros. Mide tres metros y su armadura supura oscuridad pura.</p><p><em>'¿Un simple mortal osa desafiarme?'</em> —su voz retumba en tu mente—.</p><p>Malakar carga energía para un ataque final que destruirá tu alma. Solo tienes UNA oportunidad.</p>",
+                imageGenerationPrompt: "Final Boss. Malakar, a giant void lord in spiked black armor. His face is a swirling vortex of purple energy. Sitting on a throne of bones. Raising a hand charging a massive dark energy ball. Epic scale.",
+                imageUrl: "https://placehold.co/900x500/000/800080?text=MALAKAR+BOSS+FINAL",
+                options: [
+                    { 
+                        text: "Ejecutar el 'Golpe del Rompe-Cielos' (GUERRERO).", 
+                        nextNode: 20, 
+                        requiredClass: CLASS_TYPES.WARRIOR 
+                    },
+                    { 
+                        text: "Invocar 'Ira de los Cielos' (CLÉRIGO).", 
+                        nextNode: 20, 
+                        requiredClass: CLASS_TYPES.CLERIC 
+                    },
+                    { 
+                        text: "Lanzar 'Desintegración Arcana' (MAGO).", 
+                        nextNode: 20, 
+                        requiredClass: CLASS_TYPES.MAGE 
+                    },
+                    { 
+                        text: "Usar 'Daga Fantasma' en el punto débil (PÍCARO).", 
+                        nextNode: 20, 
+                        requiredClass: CLASS_TYPES.ROGUE 
+                    },
+                    { 
+                        text: "Disparo 'Perforador de Corazones' (EXPLORADOR).", 
+                        nextNode: 20, 
+                        requiredClass: CLASS_TYPES.RANGER 
+                    },
+                    { 
+                        text: "Intentar dialogar...", 
+                        nextNode: 23 // Muerte instantánea
+                    }
+                ]
+            },
+
+            // --- FINALES Y MUERTES ---
+            {
+                id: 20,
+                text: "<p>¡IMPACTO CRÍTICO!</p><p>Tu ataque conecta perfectamente antes de que Malakar pueda lanzar su hechizo. La energía del vacío implosiona. Con un grito que desgarra la realidad, el Señor Oscuro se disuelve en la nada.</p><p>La mazmorra comienza a temblar. El mal ha sido purgado. Eres una leyenda.</p><h2>¡VICTORIA!</h2>",
+                imageGenerationPrompt: "Ending scene. The boss exploding in a flash of white light. The hero standing victorious in silhouette. Treasure falling from the ceiling. Credits style.",
+                imageUrl: "https://placehold.co/900x500/FFD700/FFF?text=LEYENDA+VIVA",
+                options: [
+                    { text: "Jugar Nueva Partida (NG+)", nextNode: 1, action: 'RESET' }
                 ]
             },
             {
-                id: 7,
-                text: "<p>Tu golpe es certero. El esqueleto se desmorona en una pila de huesos inútiles. Tu fuerza es tu mayor aliada en este lugar maldito.</p>",
-                imageGenerationPrompt: "Victory scene. A pile of broken bones on the floor. A sword resting tip-down on the ground. Dust settling. Dramatic lighting.",
-                imageUrl: "https://placehold.co/900x500/555/fff?text=Victoria+Brutal",
+                id: 21,
+                text: "<p>Sobrevives, pero a un coste terrible. Estás gravemente herido, tu armadura rota y tu espíritu quebrantado. Te arrastras hacia la siguiente sala, sabiendo que el próximo error será el último.</p>",
+                imageGenerationPrompt: "Hero badly wounded leaning against a wall. Bandages, broken sword hilt. Dark gloomy atmosphere.",
+                imageUrl: "https://placehold.co/900x500/400/000?text=Herido+de+Gravedad",
                 options: [
-                    { text: "Continuar.", nextNode: 8 }
+                    { text: "Continuar cojeando...", nextNode: 13 } // Loop de vuelta a la trama principal pero "herido" (simulado)
                 ]
             },
             {
-                id: 8,
-                text: "<p>Has llegado al corazón de la primera planta. Una gran puerta doble se alza ante ti. Esto es solo el comienzo...</p><p><em>(Fin de la Demo Técnica)</em></p>",
-                imageGenerationPrompt: "Epic fantasy scale. Massive double doors made of iron and obsidian. Intricate carvings of dragons and demons. The doors are slightly ajar, revealing a warm light inside. Sense of scale and awe.",
-                imageUrl: "https://placehold.co/900x500/000/fff?text=Fin+de+la+Demo",
+                id: 22,
+                text: "<p>El hechizo del Lich te golpea de lleno. Sientes como tu fuerza vital es drenada en segundos. Te conviertes en una estatua más de su colección.</p>",
+                imageGenerationPrompt: "Game Over screen. A stone statue looking like the hero with a terrified expression. Green fog around.",
+                imageUrl: "https://placehold.co/900x500/000/00FF00?text=GAME+OVER",
                 options: [
-                    { text: "Reiniciar Aventura", nextNode: 1, action: 'RESET' }
-                ]
-            },
-            // --- NUEVOS NODOS PARA CLÉRIGO Y EXPLORADOR ---
-            {
-                id: 9,
-                text: "<p>Invocas a tu deidad y purificas la piedra manchada de sangre. El altar brilla con una cálida luz dorada, disipando las sombras y revelando un mecanismo seguro que abre el camino.</p>",
-                imageGenerationPrompt: "Divine magic. A stone altar glowing with warm golden light, dispelling shadows. Holy symbols appearing in the air. Peaceful atmosphere.",
-                imageUrl: "https://placehold.co/900x500/FFD700/000?text=Luz+Divina",
-                options: [
-                    { text: "Avanzar con la bendición.", nextNode: 8 }
+                    { text: "Reintentar", nextNode: 1, action: 'RESET' }
                 ]
             },
             {
-                id: 10,
-                text: "<p>Tus ojos de cazador leen el suelo como un mapa. Notas marcas de arrastre hacia el frente (trampas) y huellas esqueléticas a la izquierda. Sin embargo, una leve corriente de aire te indica un pasaje seguro detrás de un tapiz.</p>",
-                imageGenerationPrompt: "Close up of dusty floor. Footprints and drag marks visible in the dust. A hand pointing at a hidden crack in the wall behind a tapestry. Detailed texture.",
-                imageUrl: "https://placehold.co/900x500/556B2F/FFF?text=Rastro+Oculto",
+                id: 23,
+                text: "<p>Malakar ríe. <em>'Patético'</em>. Con un chasquido de dedos, tu existencia es borrada de la historia. Nadie recordará tu nombre.</p>",
+                imageGenerationPrompt: "Void. Total blackness with two purple eyes looking down. Text implies total annihilation.",
+                imageUrl: "https://placehold.co/900x500/000/FFF?text=ANIQUILADO",
                 options: [
-                    { text: "Usar el atajo seguro.", nextNode: 8 }
-                ]
-            },
-            {
-                id: 11,
-                text: "<p>Alzas tu símbolo sagrado y recitas una plegaria. La luz divina estalla desde tu mano, desintegrando los huesos del esqueleto en polvo antes de que pueda tocarte.</p>",
-                imageGenerationPrompt: "Action scene. A cleric holding a glowing holy symbol. A skeleton enemy disintegrating into dust/ash in front of the light. Dramatic shadows.",
-                imageUrl: "https://placehold.co/900x500/FFF/000?text=Expulsion+Sagrada",
-                options: [
-                    { text: "Continuar.", nextNode: 8 }
+                    { text: "Reintentar", nextNode: 1, action: 'RESET' }
                 ]
             }
         ];

@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ecos de la Mazmorra - Edición Completa</title>
-    <!-- Tipografía temática -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
-    <!-- Iconos para UI -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
@@ -209,7 +207,6 @@
 
     <div id="game-engine">
         <div class="viewport">
-            <!-- Nueva Barra Superior -->
             <div class="top-bar">
                 <div id="ui-class" class="status-badge"><i class="fas fa-user-shield"></i> Clase: ???</div>
                 <div id="ui-floor" class="status-badge"><i class="fas fa-dungeon"></i> Planta: 1 / 10</div>
@@ -220,12 +217,10 @@
         </div>
 
         <div id="narrative" class="narrative-box">
-            <!-- Texto dinámico -->
-        </div>
+            </div>
 
         <div id="options" class="options-box">
-            <!-- Botones dinámicos -->
-        </div>
+            </div>
     </div>
 
     <script>
@@ -493,7 +488,18 @@
             setTimeout(() => {
                 ui.img.src = node.imageUrl;
                 ui.prompt.textContent = `PROMPT: ${node.imageGenerationPrompt}`;
+                
+                // Si carga bien, quitamos clase loading
                 ui.img.onload = () => ui.img.classList.remove('loading');
+
+                // CORRECCIÓN: Si hay error, también quitamos la clase loading para ver el fallo
+                // y ponemos un placeholder de error para que no quede vacía
+                ui.img.onerror = () => {
+                    console.error("No se pudo cargar la imagen:", node.imageUrl);
+                    ui.img.classList.remove('loading');
+                    // Opcional: Cargar imagen de error si quieres
+                    ui.img.src = "https://placehold.co/900x500/red/white?text=IMAGEN+NO+ENCONTRADA"; 
+                };
             }, 300);
 
             // 4. Renderizar Texto
